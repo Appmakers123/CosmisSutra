@@ -1,0 +1,294 @@
+import { Language } from '../types';
+
+export const translations = {
+  en: {
+    appTitle: "CosmicSutra",
+    subtitle: "Ancient Vedic Wisdom & Modern AI Insights",
+    dailyHoroscope: "Daily Horoscope",
+    vedicKundali: "Vedic Kundali",
+    dailyPanchang: "Daily Panchang",
+    palmReading: "AI Palm Reading",
+    numerology: "Numerology",
+    matchmaking: "Matchmaking",
+    aiAstrologer: "Ask Rishi",
+    learning: "Learn",
+    selectZodiac: "Select Your Zodiac",
+    loadingDaily: "Aligning the stars for you...",
+    loadingKundali: "Calculating planetary positions...",
+    loadingPanchang: "Fetching today's planetary almanac...",
+    loadingPalm: "Analyzing palm lines...",
+    loadingNumerology: "Deciphering your numbers...",
+    loadingMatchmaking: "Analyzing compatibility...",
+    return: "Return",
+    errorGeneric: "The stars are clouded right now. Please try again later.",
+    errorKundali: "Unable to calculate planetary positions. Please try again.",
+    
+    // Auth
+    login: "Login",
+    logout: "Logout",
+    welcome: "Welcome",
+    loginTitle: "Access Cosmic Wisdom",
+    loginSubtitle: "Sign in to save your charts and history",
+    emailPlaceholder: "Enter your email",
+    passwordPlaceholder: "Enter password",
+    continueWithGoogle: "Continue with Google",
+    loginButton: "Sign In",
+    guestAccess: "Continue as Guest",
+
+    // Form
+    formTitle: "Vedic Kundali",
+    formSubtitle: "Enter your birth details for an accurate Sidereal Chart.",
+    fullName: "Full Name",
+    dob: "Date of Birth",
+    tob: "Time of Birth",
+    pob: "Place of Birth",
+    pobPlaceholder: "Start typing city name...",
+    submitButton: "Generate Janam Kundali",
+    loadingButton: "Consulting the Cosmos...",
+    
+    // Matchmaking
+    boyDetails: "Boy's Details",
+    girlDetails: "Girl's Details",
+    matchAnalysis: "Compatibility Analysis",
+    matchScore: "Total Score",
+    matchConclusion: "Conclusion",
+    area: "Area",
+    total: "Total",
+    obtained: "Obtained",
+    description: "Description",
+    matchSubmit: "Check Compatibility",
+
+    // ChatBot
+    chatTitle: "Rishi AI Astrologer",
+    chatSubtitle: "Vedic Wisdom & Occult Science Expert",
+    chatWelcome: "Namaste. I am Rishi. I can guide you through the mysteries of your stars, numbers, and destiny. Ask me anything about your Horoscope, Doshas, or Remedies.",
+    chatPlaceholder: "Ask about your career, marriage, or health...",
+    send: "Send",
+    thinking: "Consulting the stars...",
+
+    // Numerology
+    numerologyTitle: "Numerology Insights",
+    numerologySubtitle: "Discover the hidden meaning of your numbers.",
+    revealDestiny: "Reveal My Destiny",
+    lifePath: "Life Path Number",
+    destinyNum: "Destiny Number",
+    soulUrge: "Soul Urge Number",
+    personalityNum: "Personality Number",
+    birthdayNum: "Birthday Number",
+    dailyNumForecast: "Today's Numerology Forecast",
+
+    // Learning Center
+    learningTitle: "Cosmic Classroom",
+    planets: "Planets (Grahas)",
+    houses: "Houses (Bhavas)",
+    conjunctions: "Conjunction Lab",
+    placements: "Planets in Houses",
+    selectPlanet: "Select Planet",
+    none: "None",
+    errorRahuKetu: "Rahu and Ketu cannot be in conjunction as they are always 180° apart.",
+    errorDuplicate: "Please select different planets.",
+    
+    // Results
+    newKundali: "New Kundali",
+    janamKundali: "Janam Kundali",
+    vedicHoroscopeFor: "Vedic Horoscope for",
+    southIndianChart: "South Indian Style",
+    northIndianChart: "North Indian Style",
+    navamshaChart: "Navamsha (D9)",
+    panchangDetails: "Panchang Details",
+    lagna: "Lagna (Ascendant)",
+    rashi: "Rashi (Moon Sign)",
+    sunSign: "Sun Sign",
+    nakshatra: "Nakshatra",
+    tithi: "Tithi",
+    vara: "Vara (Day)",
+    yoga: "Yoga",
+    karana: "Karana",
+    vimshottariDasha: "Vimshottari Dasha",
+    currentMahadasha: "Current Mahadasha",
+    antardasha: "Antardasha",
+    endsApprox: "Ends approx",
+    dashaAnalysis: "Dasha Analysis",
+    dashaImpact: "Current Period Impact",
+    
+    // Daily Panchang
+    todaysPanchang: "Today's Panchang",
+    sunrise: "Sunrise",
+    sunset: "Sunset",
+    moonrise: "Moonrise",
+    rahuKalam: "Rahu Kalam",
+    yamaganda: "Yamaganda",
+    abhijit: "Abhijit Muhurat",
+
+    // Palm Reading
+    uploadPalm: "Upload Your Palm Photo",
+    uploadPalmSubtitle: "Ensure your hand is open, well-lit, and the lines are clearly visible.",
+    analyzePalm: "Analyze Palm",
+    palmAnalysis: "Palm Analysis",
+    linesDetected: "Lines Detected",
+    palmInterpretation: "Mystical Interpretation",
+
+    // Predictions
+    personality: "Personality",
+    careerWealth: "Career & Wealth",
+    loveMarriage: "Love & Marriage",
+    health: "Health",
+    
+    // Daily Card
+    chooseAnother: "Choose Another Sign",
+    luckyNumber: "Lucky Number",
+    mood: "Mood",
+    color: "Color",
+    compatibility: "Compatibility",
+    
+    footer: "Powered by Gemini.",
+    followInstagram: "Follow us on Instagram"
+  },
+  hi: {
+    appTitle: "कॉस्मिक सूत्र",
+    subtitle: "प्राचीन वैदिक ज्ञान और आधुनिक एआई अंतर्दृष्टि",
+    dailyHoroscope: "दैनिक राशिफल",
+    vedicKundali: "वैदिक कुंडली",
+    dailyPanchang: "दैनिक पंचांग",
+    palmReading: "एआई हस्तरेखा",
+    numerology: "अंक ज्योतिष",
+    matchmaking: "गुण मिलान",
+    aiAstrologer: "ऋषि (AI ज्योतिषी)",
+    learning: "सीखें",
+    selectZodiac: "अपनी राशि चुनें",
+    loadingDaily: "आपके लिए सितारों को संरेखित कर रहा है...",
+    loadingKundali: "ग्रहों की स्थिति की गणना कर रहा है...",
+    loadingPanchang: "आज का पंचांग प्राप्त कर रहा है...",
+    loadingPalm: "हस्तरेखाओं का विश्लेषण कर रहा है...",
+    loadingNumerology: "आपके अंकों का विश्लेषण...",
+    loadingMatchmaking: "संगति का विश्लेषण...",
+    return: "वापस",
+    errorGeneric: "सितारे अभी धुंधले हैं। कृपया बाद में पुनः प्रयास करें।",
+    errorKundali: "ग्रहों की स्थिति की गणना करने में असमर्थ। कृपया पुनः प्रयास करें।",
+
+    // Auth
+    login: "लॉगिन",
+    logout: "लॉगआउट",
+    welcome: "स्वागत है",
+    loginTitle: "कॉस्मिक ज्ञान तक पहुंचें",
+    loginSubtitle: "अपने चार्ट और इतिहास को सहेजने के लिए साइन इन करें",
+    emailPlaceholder: "अपना ईमेल दर्ज करें",
+    passwordPlaceholder: "पासवर्ड दर्ज करें",
+    continueWithGoogle: "Google के साथ जारी रखें",
+    loginButton: "साइन इन करें",
+    guestAccess: "अतिथि के रूप में जारी रखें",
+
+    // Form
+    formTitle: "वैदिक कुंडली",
+    formSubtitle: "सटीक साइडरियल चार्ट के लिए अपना जन्म विवरण दर्ज करें।",
+    fullName: "पूरा नाम",
+    dob: "जन्म तिथि",
+    tob: "जन्म समय",
+    pob: "जन्म स्थान",
+    pobPlaceholder: "शहर का नाम टाइप करें...",
+    submitButton: "जन्म कुंडली बनाएं",
+    loadingButton: "ब्रह्मांड से परामर्श...",
+
+    // Matchmaking
+    boyDetails: "वर का विवरण",
+    girlDetails: "वधू का विवरण",
+    matchAnalysis: "संगति विश्लेषण",
+    matchScore: "कुल गुण",
+    matchConclusion: "निष्कर्ष",
+    area: "क्षेत्र",
+    total: "कुल",
+    obtained: "प्राप्त",
+    description: "विवरण",
+    matchSubmit: "गुण मिलाएँ",
+
+    // ChatBot
+    chatTitle: "ऋषि एआई ज्योतिषी",
+    chatSubtitle: "वैदिक ज्ञान और गुप्त विज्ञान विशेषज्ञ",
+    chatWelcome: "नमस्ते। मैं ऋषि हूं। मैं आपको आपके सितारों, अंकों और भाग्य के रहस्यों के बारे में मार्गदर्शन कर सकता हूं। अपनी कुंडली, दोषों या उपायों के बारे में कुछ भी पूछें।",
+    chatPlaceholder: "अपने करियर, विवाह या स्वास्थ्य के बारे में पूछें...",
+    send: "भेजें",
+    thinking: "सितारों से परामर्श...",
+
+    // Numerology
+    numerologyTitle: "अंक ज्योतिष अंतर्दृष्टि",
+    numerologySubtitle: "अपने अंकों के छिपे हुए अर्थ की खोज करें।",
+    revealDestiny: "मेरा भाग्य बताएं",
+    lifePath: "मूलांक (Life Path)",
+    destinyNum: "भाग्यांक (Destiny)",
+    soulUrge: "आत्मा कारक (Soul Urge)",
+    personalityNum: "व्यक्तित्व अंक (Personality)",
+    birthdayNum: "जन्म अंक (Birthday)",
+    dailyNumForecast: "आज का अंक राशिफल",
+
+    // Learning Center
+    learningTitle: "ज्योतिष कक्षा",
+    planets: "ग्रह (Grahas)",
+    houses: "भाव (Houses)",
+    conjunctions: "युति प्रयोगशाला",
+    placements: "भावों में ग्रह",
+    selectPlanet: "ग्रह चुनें",
+    none: "कोई नहीं",
+    errorRahuKetu: "राहु और केतु एक साथ नहीं हो सकते क्योंकि वे हमेशा 180° अलग होते हैं।",
+    errorDuplicate: "कृपया अलग-अलग ग्रह चुनें।",
+
+    // Results
+    newKundali: "नई कुंडली",
+    janamKundali: "जन्म कुंडली",
+    vedicHoroscopeFor: "वैदिक राशिफल -",
+    southIndianChart: "दक्षिण भारतीय शैली",
+    northIndianChart: "उत्तर भारतीय शैली",
+    navamshaChart: "नवमांश (D9)",
+    panchangDetails: "पंचांग विवरण",
+    lagna: "लग्न (Ascendant)",
+    rashi: "राशि (Moon Sign)",
+    sunSign: "सूर्य राशि",
+    nakshatra: "नक्षत्र",
+    tithi: "तिथि",
+    vara: "वार (दिन)",
+    yoga: "योग",
+    karana: "करण",
+    vimshottariDasha: "विंशोत्तरी दशा",
+    currentMahadasha: "वर्तमान महादशा",
+    antardasha: "अंतर्दशा",
+    endsApprox: "समाप्ति लगभग",
+    dashaAnalysis: "दशा विश्लेषण",
+    dashaImpact: "वर्तमान अवधि का प्रभाव",
+
+    // Daily Panchang
+    todaysPanchang: "आज का पंचांग",
+    sunrise: "सूर्योदय",
+    sunset: "सूर्यास्त",
+    moonrise: "चंद्रोदय",
+    rahuKalam: "राहु काल",
+    yamaganda: "यमगंड",
+    abhijit: "अभिजित मुहूर्त",
+
+    // Palm Reading
+    uploadPalm: "अपनी हथेली की फोटो अपलोड करें",
+    uploadPalmSubtitle: "सुनिश्चित करें कि आपका हाथ खुला है, रोशनी अच्छी है, और रेखाएं स्पष्ट दिखाई दे रही हैं।",
+    analyzePalm: "विश्लेषण करें",
+    palmAnalysis: "हस्तरेखा विश्लेषण",
+    linesDetected: "पहचानी गई रेखाएं",
+    palmInterpretation: "रहस्यमय व्याख्या",
+
+    // Predictions
+    personality: "व्यक्तित्व",
+    careerWealth: "करियर और धन",
+    loveMarriage: "प्रेम और विवाह",
+    health: "स्वास्थ्य",
+
+    // Daily Card
+    chooseAnother: "दूसरी राशि चुनें",
+    luckyNumber: "शुभ अंक",
+    mood: "मनोदशा",
+    color: "शुभ रंग",
+    compatibility: "अनुकूलता",
+
+    footer: "जेमिनी द्वारा संचालित।",
+    followInstagram: "हमें इंस्टाग्राम पर फॉलो करें"
+  }
+};
+
+export const useTranslation = (lang: Language) => {
+  return translations[lang];
+};
