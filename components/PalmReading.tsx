@@ -3,6 +3,7 @@ import { useTranslation } from '../utils/translations';
 import { Language, PalmPrediction } from '../types';
 import { generatePalmInterpretation } from '../services/geminiService';
 import AdBanner from './AdBanner';
+import RichText from './RichText';
 
 interface PalmReadingProps {
   language: Language;
@@ -256,10 +257,12 @@ const PalmReading: React.FC<PalmReadingProps> = ({ language }) => {
                         <h3 className="text-xl font-serif text-amber-100 mb-4 flex items-center gap-2 relative z-10">
                              <span className="text-2xl">🔮</span> {t.palmInterpretation}
                         </h3>
-                        <p className="text-slate-200 leading-relaxed italic text-lg relative z-10 font-light tracking-wide whitespace-pre-wrap">
-                            {reading}
-                        </p>
+                        <div className="relative z-10">
+                            <RichText text={reading} />
+                        </div>
                      </div>
+                     
+                     <AdBanner variant="leaderboard" />
 
                      {/* Technical Details Table */}
                      <div className="bg-slate-900/30 p-4 rounded-xl border border-slate-700/50 mt-6">

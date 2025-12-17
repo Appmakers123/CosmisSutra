@@ -4,6 +4,7 @@ import { Language } from '../types';
 import { PLANETS_INFO, HOUSES_INFO, ZODIAC_SIGNS } from '../constants';
 import { generateConjunctionAnalysis, generatePlacementAnalysis } from '../services/geminiService';
 import AdBanner from './AdBanner';
+import RichText from './RichText';
 
 interface LearningCenterProps {
   language: Language;
@@ -154,7 +155,7 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ language }) => {
         {/* PLACEMENTS TAB */}
         {activeTab === 'placements' && (
             <div className="animate-fade-in max-w-3xl mx-auto">
-                 <div className="text-center mb-6">
+                <div className="text-center mb-6">
                     <p className="text-slate-300 text-sm mb-4">
                         {language === 'hi' 
                          ? "किसी भी भाव और राशि में किसी भी ग्रह के प्रभाव को जानें।"
@@ -220,9 +221,7 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ language }) => {
                                 ? `${placementHouse} भाव (${placementSign}) में ${PLANETS_INFO.find(p => p.name === placementPlanet)?.hindi}`
                                 : `${placementPlanet} in ${placementHouse}th House (${placementSign})`}
                         </h3>
-                        <p className="text-slate-300 leading-relaxed italic">
-                            "{placementAnalysis}"
-                        </p>
+                        <RichText text={placementAnalysis} />
                     </div>
                 )}
 
@@ -316,9 +315,7 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ language }) => {
                         <h3 className="text-lg font-serif text-amber-100 mb-3 border-b border-slate-700 pb-2">
                              {language === 'hi' ? "विश्लेषण परिणाम" : "Analysis Result"}
                         </h3>
-                        <p className="text-slate-300 leading-relaxed italic">
-                            "{analysis}"
-                        </p>
+                        <RichText text={analysis} />
                     </div>
                 )}
                 

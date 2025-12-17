@@ -10,6 +10,7 @@ const AdBanner: React.FC<AdBannerProps> = ({ variant = 'leaderboard', className 
   const adRef = useRef<HTMLModElement>(null);
   const clientId = "ca-pub-3559865379099936";
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
     // Prevent multiple pushes for the same component instance
@@ -19,9 +20,11 @@ const AdBanner: React.FC<AdBannerProps> = ({ variant = 'leaderboard', className 
 
     const tryPushAd = () => {
         if (adRef.current) {
-             // Check if element is visible and has width
+             // Check if element is visible and has width to prevent "No slot size for availableWidth=0"
+             // This happens often in SPAs when tabs are switched or content loads dynamically
              const { offsetWidth } = adRef.current;
-             // We need a non-zero width for responsive ads to work
+             
+             // We generally need a non-zero width.
              if (offsetWidth > 0) {
                  try {
                     // @ts-ignore
@@ -46,7 +49,7 @@ const AdBanner: React.FC<AdBannerProps> = ({ variant = 'leaderboard', className 
             }
         }, 300);
 
-        // Safety timeout
+        // Safety timeout to clear interval
         setTimeout(() => {
             if (intervalId) clearInterval(intervalId);
         }, 5000);
@@ -57,36 +60,52 @@ const AdBanner: React.FC<AdBannerProps> = ({ variant = 'leaderboard', className 
     };
   }, [slotId, isLoaded]); 
 
+  if (!isVisible) return null;
+
   if (variant === 'sticky-footer') {
     return (
-      <div className="fixed bottom-0 left-0 w-full z-50 bg-slate-900/95 border-t border-slate-700 p-2 flex justify-center animate-fade-in-up shadow-lg min-h-[60px]">
-           <div className="w-full max-w-[728px] h-[50px] flex items-center justify-center relative overflow-hidden">
-             <ins 
-               ref={adRef}
-               className="adsbygoogle"
-               style={{ display: 'inline-block', width: '728px', height: '50px' }}
-               data-ad-client={clientId}
-               data-ad-slot={slotId}
-             ></ins>
+      <div 
+        className="fixed bottom-0 left-0 w-full z-50 bg-slate-900/95 border-t border-slate-700 flex justify-center animate-fade-in-up shadow-[0_-5px_20px_rgba(0,0,0,0.5)]"
+        style={{ maxHeight: '20vh', minHeight: '60px' }}
+      >
+           <div className="w-full max-w-[728px] relative flex items-center justify-center">
+             {/* Close Button */}
+             <button 
+                onClick={() => setIsVisible(false)}
+                className="absolute -top-3 right-2 bg-slate-800 text-slate-400 hover:text-white rounded-full p-1 border border-slate-600 shadow-lg z-[60] hover:scale-110 transition-transform"
+                title="Close Ad"
+             >
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+             </button>
+
+             <div className="w-full h-full overflow-hidden flex items-center justify-center">
+                <ins 
+                  ref={adRef}
+                  className="adsbygoogle"
+                  style={{ display: 'block', width: '100%', height: 'auto', maxHeight: '20vh' }}
+                  data-ad-client={clientId}
+                  data-ad-slot={slotId}
+                  data-ad-format="horizontal"
+                  data-full-width-responsive="true"
+                ></ins>
+             </div>
            </div>
       </div>
     );
   }
 
-  // Standard Responsive Unit
+  // Standard Responsive Unit (CosmicSutra Ad 1)
   return (
     <div className={`flex justify-center my-6 ${className}`}>
-      {/* 
-         Constraint container: 
-         - min-height ensures layout stability 
-         - w-full ensures it takes available space 
-      */}
+      {/* Container helps with CLS by reserving minimum space */}
       <div className="w-full max-w-[1200px] bg-slate-800/20 rounded-lg min-h-[100px] flex items-center justify-center text-center relative overflow-hidden">
            <span className="absolute top-1 right-2 text-[10px] text-slate-600 uppercase tracking-wider">Advertisement</span>
            <ins 
              ref={adRef}
              className="adsbygoogle"
-             style={{ display: 'block', width: '100%', minHeight: '90px' }}
+             style={{ display: 'block', width: '100%' }}
              data-ad-client={clientId}
              data-ad-slot={slotId}
              data-ad-format="auto"

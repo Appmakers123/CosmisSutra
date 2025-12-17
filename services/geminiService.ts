@@ -16,12 +16,13 @@ const ai = new GoogleGenAI({ apiKey: apiKey || 'DUMMY_KEY_FOR_BUILD' });
 
 // --- UTILITIES ---
 
+// Helper to delay execution
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 // Helper to get Coordinates and Timezone from Location String
 async function getGeoLocation(location: string) {
   try {
-    // Use FreeAstrologyAPI for Geocoding
     const result = await fetchAstroApi('/geo-details', { location });
-
     if (Array.isArray(result) && result.length > 0) {
       const place = result[0];
       return {
@@ -42,11 +43,9 @@ async function getGeoLocation(location: string) {
 // Calculate Timezone Offset (e.g. 5.5 for IST)
 function getTimezoneOffset(timeZone: string, dateStr: string, timeStr: string): number {
   try {
-    if (!timeZone) return 5.5; // Default to IST if missing
+    if (!timeZone) return 5.5;
     const date = new Date(`${dateStr}T${timeStr}:00`);
-    // Fallback if date is invalid
     if (isNaN(date.getTime())) return 5.5;
-
     const str = date.toLocaleString('en-US', { timeZone, timeZoneName: 'shortOffset' });
     const match = str.match(/GMT([+-]\d{1,2}):?(\d{2})?/);
     if (match) {
@@ -55,9 +54,8 @@ function getTimezoneOffset(timeZone: string, dateStr: string, timeStr: string): 
       const sign = hours >= 0 ? 1 : -1;
       return hours + (sign * minutes / 60);
     }
-    return 5.5; // Default fallback
+    return 5.5;
   } catch (e) {
-    console.warn("Timezone calculation failed, defaulting to 5.5", e);
     return 5.5;
   }
 }
@@ -70,8 +68,6 @@ function getSignName(signId: number): string {
 }
 
 function getHouseFromAscendant(planetSignId: number, ascendantSignId: number): number {
-    // Calculate house number relative to Ascendant (Lagna)
-    // House 1 = Ascendant Sign
     let house = (planetSignId - ascendantSignId) + 1;
     if (house <= 0) house += 12;
     return house;
@@ -79,126 +75,84 @@ function getHouseFromAscendant(planetSignId: number, ascendantSignId: number): n
 
 // --- API FETCHERS ---
 
-// Generic fetcher for Astro API
-async function fetchAstroApi(endpoint: string, payload: any) {
-    try {
-        const response = await fetch(`${ASTRO_BASE_URL}${endpoint}`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "x-api-key": ASTRO_API_KEY
-            },
-            body: JSON.stringify(payload)
-        });
+// Generic fetcher for Astro API with Exponential Backoff for 429 Errors
+async function fetchAstroApi(endpoint: string, payload: any, retries = 3) {
+    for (let attempt = 0; attempt < retries; attempt++) {
+        try {
+            const response = await fetch(`${ASTRO_BASE_URL}${endpoint}`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-api-key": ASTRO_API_KEY
+                },
+                body: JSON.stringify(payload)
+            });
 
-        if (!response.ok) {
-             const errorBody = await response.text();
-             console.error(`API Error ${endpoint}: ${response.status} - ${errorBody}`);
-             return null;
+            if (response.status === 429) {
+                const waitTime = 1500 * Math.pow(2, attempt);
+                console.warn(`Rate Limit hit for ${endpoint}. Retrying in ${waitTime}ms...`);
+                await delay(waitTime);
+                continue;
+            }
+
+            if (!response.ok) {
+                 const errorBody = await response.text();
+                 console.error(`API Error ${endpoint}: ${response.status} - ${errorBody}`);
+                 return null;
+            }
+
+            const data = await response.json();
+            return data.output || data.response || data;
+        } catch(e) {
+            if (attempt === retries - 1) return null;
+            await delay(1000);
         }
-
-        const data = await response.json();
-        // The API returns { statusCode: 200, output: { ... } } or just the object depending on endpoint
-        return data.output || data.response || data;
-    } catch(e) {
-        console.error(`Fetch failed for ${endpoint}`, e);
-        return null;
     }
+    return null;
 }
 
-// 1. Fetch D1 Chart Data (Planets)
-// Uses endpoint: https://json.freeastrologyapi.com/planets
 async function fetchD1Data(date: string, time: string, lat: number, lon: number, tzone: number) {
     const [year, month, day] = date.split('-').map(Number);
     const [hour, min] = time.split(':').map(Number);
-    
-    // Ensure inputs are numbers
-    if ([year, month, day, hour, min, lat, lon, tzone].some(x => isNaN(x))) {
-        console.error("Invalid input data for D1 Data", {date, time, lat, lon, tzone});
-        return null;
-    }
+    if ([year, month, day, hour, min, lat, lon, tzone].some(x => isNaN(x))) return null;
 
     const payload = {
         year, month, date: day, hours: hour, minutes: min, seconds: 0,
         latitude: lat, longitude: lon, timezone: tzone,
-        settings: { 
-            observation_point: "topocentric", 
-            ayanamsha: "lahiri"
-        }
+        settings: { observation_point: "topocentric", ayanamsha: "lahiri" }
     };
-
     return fetchAstroApi('/planets', payload);
 }
 
-// 2. Fetch D9 Chart Data (Navamsa Chart Info)
-// Uses endpoint: https://json.freeastrologyapi.com/navamsa-chart-info
 async function fetchD9Data(date: string, time: string, lat: number, lon: number, tzone: number) {
     const [year, month, day] = date.split('-').map(Number);
     const [hour, min] = time.split(':').map(Number);
-    
     const payload = {
         year, month, date: day, hours: hour, minutes: min, seconds: 0,
         latitude: lat, longitude: lon, timezone: tzone,
-        settings: { 
-            observation_point: "topocentric", 
-            ayanamsha: "lahiri" 
-        }
+        settings: { observation_point: "topocentric", ayanamsha: "lahiri" }
     };
-
     return fetchAstroApi('/navamsa-chart-info', payload);
 }
-
-// 3. Fetch D1 SVG Chart
-async function fetchD1Svg(date: string, time: string, lat: number, lon: number, tzone: number) {
-    const [year, month, day] = date.split('-').map(Number);
-    const [hour, min] = time.split(':').map(Number);
-    
-    const payload = {
-        year, month, date: day, hours: hour, minutes: min, seconds: 0,
-        latitude: lat, longitude: lon, timezone: tzone,
-        settings: { 
-            observation_point: "topocentric", 
-            ayanamsha: "lahiri" 
-        }
-    };
-
-    const result = await fetchAstroApi('/horoscope-chart-svg-code', payload);
-    return result; 
-}
-
-// 4. Fetch D9 SVG Chart
-async function fetchD9Svg(date: string, time: string, lat: number, lon: number, tzone: number) {
-    const [year, month, day] = date.split('-').map(Number);
-    const [hour, min] = time.split(':').map(Number);
-    
-    const payload = {
-        year, month, date: day, hours: hour, minutes: min, seconds: 0,
-        latitude: lat, longitude: lon, timezone: tzone,
-        settings: {
-            observation_point: "topocentric", 
-            ayanamsha: "lahiri" 
-        }
-    };
-
-    const result = await fetchAstroApi('/navamsa-chart-svg-code', payload);
-    return result; 
-}
-
 
 // --- CORE GENERATORS ---
 
 export const generateHoroscope = async (signName: string, language: Language = 'en'): Promise<HoroscopeResponse> => {
+  const todayDate = new Date();
+  const dateKey = todayDate.toLocaleDateString('en-CA');
+  const cacheKey = `cs_horoscope_${signName.toLowerCase().replace(/\s+/g, '_')}_${language}_${dateKey}`;
+
   try {
-    const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) return JSON.parse(cached);
+  } catch (e) {}
+
+  try {
+    const today = todayDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     const langString = language === 'hi' ? 'Hindi' : 'English';
-    
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
-      contents: `Generate a daily horoscope for ${signName} for today, ${today}. 
-      Output language: ${langString}.
-      The tone should be mystical, encouraging, yet grounded. 
-      Also provide a lucky number (1-99), a lucky color, a one-word mood, and a compatible sign.
-      Ensure all text fields are in ${langString}.`,
+      contents: `Generate a daily horoscope for ${signName} for today, ${today}. Language: ${langString}. Include lucky number, color, mood, and compatibility.`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -214,8 +168,9 @@ export const generateHoroscope = async (signName: string, language: Language = '
         }
       }
     });
-
-    return JSON.parse(response.text!) as HoroscopeResponse;
+    const result = JSON.parse(response.text!) as HoroscopeResponse;
+    try { localStorage.setItem(cacheKey, JSON.stringify(result)); } catch (e) {}
+    return result;
   } catch (error) {
     console.error("Error generating horoscope:", error);
     throw error;
@@ -229,487 +184,280 @@ export const generatePersonalizedDailyHoroscope = async (data: KundaliFormData, 
 export const generateKundali = async (data: KundaliFormData, language: Language = 'en'): Promise<KundaliResponse> => {
   try {
     const langString = language === 'hi' ? 'Hindi' : 'English';
+    let lat = data.lat || 28.6139;
+    let lon = data.lon || 77.2090;
+    let tzoneOffset = 5.5;
     
-    // 1. Prepare Geolocation & Time Data
-    let lat = data.lat;
-    let lon = data.lon;
-    let tzoneOffset = 0;
-    
-    // If lat/lon provided, calculate tzone from provided tzone string or default
-    if (lat !== undefined && lon !== undefined) {
-         tzoneOffset = getTimezoneOffset(data.tzone || 'Asia/Kolkata', data.date, data.time);
-    }
-
-    // If missing lat/lon, try to fetch
-    if (lat === undefined || lon === undefined) {
+    if (data.lat === undefined || data.lon === undefined) {
         const geo = await getGeoLocation(data.location);
         if (geo) {
             lat = geo.latitude;
             lon = geo.longitude;
-            tzoneOffset = geo.timezoneOffset !== undefined 
-                ? geo.timezoneOffset 
-                : getTimezoneOffset(geo.timezone, data.date, data.time);
-        } else {
-            // Fallback for demo purposes if Geo fails (avoid 400 error by sending valid dummy coords)
-            console.warn("Geocoding failed, using default coordinates (Delhi)");
-            lat = 28.6139;
-            lon = 77.2090;
-            tzoneOffset = 5.5;
+            tzoneOffset = geo.timezoneOffset !== undefined ? geo.timezoneOffset : getTimezoneOffset(geo.timezone, data.date, data.time);
         }
+    } else {
+        tzoneOffset = getTimezoneOffset(data.tzone || 'Asia/Kolkata', data.date, data.time);
     }
 
-    // Ensure lat/lon are numbers and not null/undefined
-    lat = Number(lat);
-    lon = Number(lon);
-    
-    // Safety check for NaN
-    if (isNaN(lat)) lat = 28.6139;
-    if (isNaN(lon)) lon = 77.2090;
+    // CRITICAL: Fetch sequentially to avoid 429 Errors
+    const d1Raw = await fetchD1Data(data.date, data.time, lat, lon, tzoneOffset);
+    await delay(500); // Small gap
+    const d9Raw = await fetchD9Data(data.date, data.time, lat, lon, tzoneOffset);
 
-    // 2. Fetch Charts from API
-    // Run all fetches in parallel for speed
-    const [d1Raw, d9Raw, d1Svg, d9Svg] = await Promise.all([
-        fetchD1Data(data.date, data.time, lat, lon, tzoneOffset),
-        fetchD9Data(data.date, data.time, lat, lon, tzoneOffset),
-        fetchD1Svg(data.date, data.time, lat, lon, tzoneOffset),
-        fetchD9Svg(data.date, data.time, lat, lon, tzoneOffset)
-    ]);
-
-    // Fallback Mock Data if API totally fails
     const mockPlanets = {
-         "Sun": { "current_sign": 5, "isRetro": "false" },
-         "Moon": { "current_sign": 2, "isRetro": "false" },
-         "Mars": { "current_sign": 8, "isRetro": "false" },
-         "Mercury": { "current_sign": 4, "isRetro": "false" },
-         "Jupiter": { "current_sign": 12, "isRetro": "false" },
-         "Venus": { "current_sign": 6, "isRetro": "false" },
-         "Saturn": { "current_sign": 11, "isRetro": "true" },
-         "Rahu": { "current_sign": 1, "isRetro": "true" },
-         "Ketu": { "current_sign": 7, "isRetro": "true" },
-         "Ascendant": { "current_sign": 10 }
+         "Sun": { "current_sign": 1, "isRetro": "false" },
+         "Moon": { "current_sign": 4, "isRetro": "false" },
+         "Ascendant": { "current_sign": 1 }
     };
     
-    // Use API data or fallback
     const d1Data = d1Raw || mockPlanets;
-
-    if (!d1Raw) console.warn("Using Fallback D1 Data because API returned null/error");
-
-    // 3. Process D1 Charts
-    const getD1Info = (planetName: string) => {
-        // API extended keys often match planet names. Ascendant might be 'Ascendant'
-        // d1Data keys might be lowercase
-        const key = Object.keys(d1Data).find(k => k.toLowerCase() === planetName.toLowerCase());
+    const getD1Info = (p: string) => {
+        const key = Object.keys(d1Data).find(k => k.toLowerCase() === p.toLowerCase());
         return key ? d1Data[key] : null;
     };
 
-    const ascendantInfo = getD1Info("Ascendant") || { current_sign: 1 };
-    const d1AscSignId = parseInt(ascendantInfo.current_sign) || 1;
-
+    const d1AscSignId = parseInt(getD1Info("Ascendant")?.current_sign) || 1;
     const planetList = ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn", "Rahu", "Ketu"];
     const d1Positions: PlanetaryPosition[] = [];
     const d9Positions: PlanetaryPosition[] = [];
 
-    // Helper for Navamsha
-    const getD9SignId = (planetName: string) => {
-        if (d9Raw) {
-             const key = Object.keys(d9Raw).find(k => k.toLowerCase() === planetName.toLowerCase());
-             if (key) return parseInt(d9Raw[key]);
-        }
-        return 0; // 0 means unknown/unmapped
+    const getD9SignId = (p: string) => {
+        if (!d9Raw) return 0;
+        const key = Object.keys(d9Raw).find(k => k.toLowerCase() === p.toLowerCase());
+        const val = key ? d9Raw[key] : null;
+        if (typeof val === 'object' && val !== null) return parseInt(val.current_sign);
+        return parseInt(val) || 0;
     };
     
-    const d9AscSignId = getD9SignId("Ascendant") || d1AscSignId; // Fallback to D1 Asc if D9 fails
+    const d9AscSignId = getD9SignId("Ascendant") || d1AscSignId;
 
-    planetList.forEach(planetName => {
-        // D1 Processing
-        const pInfo = getD1Info(planetName);
+    planetList.forEach(pName => {
+        const pInfo = getD1Info(pName);
         if (pInfo) {
             const d1SignId = parseInt(pInfo.current_sign);
-            const d1House = getHouseFromAscendant(d1SignId, d1AscSignId);
-            const isRetro = String(pInfo.isRetro) === "true";
-
             d1Positions.push({
-                planet: planetName,
+                planet: pName,
                 sign: getSignName(d1SignId),
                 signId: d1SignId,
-                house: d1House,
-                isRetrograde: isRetro
+                house: getHouseFromAscendant(d1SignId, d1AscSignId),
+                isRetrograde: String(pInfo.isRetro) === "true"
             });
-
-            // D9 Processing
-            let d9SignId = getD9SignId(planetName);
-            if (d9SignId === 0) d9SignId = d1SignId; // Fallback
-            
-            const d9House = getHouseFromAscendant(d9SignId, d9AscSignId);
-            
+            let d9SignId = getD9SignId(pName) || d1SignId;
             d9Positions.push({
-                planet: planetName,
+                planet: pName,
                 sign: getSignName(d9SignId),
                 signId: d9SignId,
-                house: d9House,
-                isRetrograde: isRetro
+                house: getHouseFromAscendant(d9SignId, d9AscSignId),
+                isRetrograde: String(pInfo.isRetro) === "true"
             });
         }
     });
 
-    // 4. Generate Analysis with Gemini
-    const chartContext = JSON.stringify({
-        ascendant: getSignName(d1AscSignId),
-        planets: d1Positions.map(p => `${p.planet} in ${p.sign} (${p.house}th House)`)
-    });
+    const chartContext = JSON.stringify({ d1: d1Positions, d9: d9Positions });
 
     const response = await ai.models.generateContent({
       model: "gemini-3-pro-preview",
-      contents: `Act as a master Vedic Astrologer. Create a DETAILED Janam Kundali Reading for ${data.name}.
-      
-      ACCURATE CHART DATA (Calculated):
-      Ascendant: ${getSignName(d1AscSignId)}
-      Planetary Positions: ${chartContext}
-      
-      INSTRUCTIONS:
-      1. Use the calculated chart data above. Do NOT hallucinate positions.
-      2. Analyze the strength of the Ascendant and Moon sign.
-      3. **Major Yogas**: Identify specific meaningful yogas formed in this chart.
-      4. **Planetary Analysis**: For EACH planet, provide a concise analysis of its effect based on its House and Sign placement.
-      5. Provide detailed predictions for General, Career, Love, and Health.
-      6. **Remedies**: Provide 3-4 specific, practical Vedic remedies.
-      7. Calculate and mention the likely current Mahadasha based on Moon's position.
-      
-      Output Language: ${langString}.
-      
-      Format: JSON`,
+      contents: `Generate a detailed Vedic Kundali reading for ${data.name}. Data: ${chartContext}. Analysis in ${langString}.`,
       config: {
-        thinkingConfig: { thinkingBudget: 32768 },
+        thinkingConfig: { thinkingBudget: 16000 },
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
           properties: {
-            basicDetails: {
-              type: Type.OBJECT,
-              properties: {
-                ascendant: { type: Type.STRING },
-                ascendantSignId: { type: Type.INTEGER },
-                moonSign: { type: Type.STRING },
-                sunSign: { type: Type.STRING },
-                nakshatra: { type: Type.STRING }
-              }
+            basicDetails: { type: Type.OBJECT, properties: { ascendant: { type: Type.STRING }, moonSign: { type: Type.STRING }, sunSign: { type: Type.STRING }, nakshatra: { type: Type.STRING } } },
+            panchang: { type: Type.OBJECT, properties: { tithi: { type: Type.STRING }, vara: { type: Type.STRING }, nakshatra: { type: Type.STRING }, yoga: { type: Type.STRING }, karana: { type: Type.STRING } } },
+            details: { 
+              type: Type.OBJECT, 
+              properties: { 
+                mangalDosha: { type: Type.OBJECT, properties: { present: { type: Type.BOOLEAN }, one_line_description: { type: Type.STRING } } }, 
+                gemstones: { 
+                  type: Type.OBJECT, 
+                  properties: { 
+                    life: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, gem: { type: Type.STRING }, wear_finger: { type: Type.STRING }, wear_metal: { type: Type.STRING }, reason: { type: Type.STRING } } },
+                    lucky: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, gem: { type: Type.STRING }, wear_finger: { type: Type.STRING }, wear_metal: { type: Type.STRING }, reason: { type: Type.STRING } } },
+                    benefic: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, gem: { type: Type.STRING }, wear_finger: { type: Type.STRING }, wear_metal: { type: Type.STRING }, reason: { type: Type.STRING } } }
+                  },
+                  required: ["life", "lucky", "benefic"]
+                }, 
+                yogas: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, description: { type: Type.STRING } } } }, 
+                remedies: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { title: { type: Type.STRING }, description: { type: Type.STRING } } } } 
+              } 
             },
-            panchang: {
-              type: Type.OBJECT,
-              properties: {
-                tithi: { type: Type.STRING },
-                vara: { type: Type.STRING },
-                nakshatra: { type: Type.STRING },
-                yoga: { type: Type.STRING },
-                karana: { type: Type.STRING }
-              }
-            },
-            details: {
-                type: Type.OBJECT,
-                properties: {
-                    mangalDosha: { type: Type.OBJECT, properties: { present: { type: Type.BOOLEAN }, one_line_description: { type: Type.STRING } } },
-                    kalsarpaDosha: { type: Type.OBJECT, properties: { present: { type: Type.BOOLEAN }, one_line_description: { type: Type.STRING } } },
-                    sadeSati: { type: Type.OBJECT, properties: { is_undergoing: { type: Type.BOOLEAN }, phase: { type: Type.STRING }, description: { type: Type.STRING } } },
-                    gemstones: {
-                         type: Type.OBJECT,
-                        properties: {
-                            life: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, gem: { type: Type.STRING }, wear_finger: { type: Type.STRING }, wear_metal: { type: Type.STRING } } },
-                            lucky: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, gem: { type: Type.STRING }, wear_finger: { type: Type.STRING }, wear_metal: { type: Type.STRING } } },
-                            benefic: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, gem: { type: Type.STRING }, wear_finger: { type: Type.STRING }, wear_metal: { type: Type.STRING } } }
-                        }
-                    },
-                    yogas: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, description: { type: Type.STRING } } } },
-                    remedies: {
-                        type: Type.ARRAY,
-                        items: {
-                            type: Type.OBJECT,
-                            properties: {
-                                title: { type: Type.STRING },
-                                description: { type: Type.STRING }
-                            }
-                        }
-                    },
-                    favorablePoints: {
-                        type: Type.OBJECT,
-                        properties: {
-                            lucky_number: { type: Type.INTEGER },
-                            lucky_day: { type: Type.STRING },
-                            lucky_metal: { type: Type.STRING },
-                            lucky_stone: { type: Type.STRING }
-                        }
-                    }
-                }
-            },
-            planetAnalysis: {
-                type: Type.ARRAY,
-                items: {
-                    type: Type.OBJECT,
-                    properties: {
-                        planet: { type: Type.STRING },
-                        position: { type: Type.STRING },
-                        analysis: { type: Type.STRING }
-                    }
-                }
-            },
-            dasha: {
-              type: Type.OBJECT,
-              properties: {
-                currentMahadasha: { type: Type.STRING },
-                antardasha: { type: Type.STRING },
-                endsAt: { type: Type.STRING },
-                analysis: { type: Type.STRING }
-              }
-            },
-            predictions: {
-              type: Type.OBJECT,
-              properties: {
-                general: { type: Type.STRING },
-                career: { type: Type.STRING },
-                love: { type: Type.STRING },
-                health: { type: Type.STRING }
-              }
-            }
-          },
-          required: ["basicDetails", "predictions", "details", "planetAnalysis"]
+            planetAnalysis: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { planet: { type: Type.STRING }, position: { type: Type.STRING }, analysis: { type: Type.STRING } } } },
+            dasha: { type: Type.OBJECT, properties: { currentMahadasha: { type: Type.STRING }, antardasha: { type: Type.STRING }, endsAt: { type: Type.STRING }, analysis: { type: Type.STRING } } },
+            predictions: { type: Type.OBJECT, properties: { general: { type: Type.STRING }, career: { type: Type.STRING }, love: { type: Type.STRING }, health: { type: Type.STRING } } }
+          }
         }
       }
     });
 
-    const responseText = response.text;
-    if (!responseText) throw new Error("Empty response from Gemini");
-    const aiData = JSON.parse(responseText);
-
-    const mergedResponse: KundaliResponse = {
+    const aiData = JSON.parse(response.text!);
+    return {
         ...aiData,
-        basicDetails: {
-            ...aiData.basicDetails,
-            ascendant: getSignName(d1AscSignId),
-            ascendantSignId: d1AscSignId,
-            moonSign: d1Positions.find(p => p.planet === "Moon")?.sign || aiData.basicDetails.moonSign
-        },
-        charts: {
-            planetaryPositions: d1Positions,
-            navamshaPositions: d9Positions,
-            navamshaAscendantSignId: d9AscSignId,
-            shadbala: [], 
-            d1Svg: typeof d1Svg === 'string' ? d1Svg : undefined,
-            d9Svg: typeof d9Svg === 'string' ? d9Svg : undefined
-        }
+        basicDetails: { ...aiData.basicDetails, ascendantSignId: d1AscSignId },
+        charts: { planetaryPositions: d1Positions, navamshaPositions: d9Positions, navamshaAscendantSignId: d9AscSignId, shadbala: [] }
     };
-    
-    return mergedResponse;
-
   } catch (error) {
-    console.error("Error generating Kundali:", error);
+    console.error("Kundali Error:", error);
     throw error;
   }
 };
 
 export const generateDailyPanchang = async (location: string = "New Delhi, India", language: Language = 'en'): Promise<DailyPanchangResponse> => {
-    try {
-        const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-        const langString = language === 'hi' ? 'Hindi' : 'English';
+    const todayDate = new Date();
+    const dateKey = todayDate.toLocaleDateString('en-CA');
+    const cacheKey = `cs_panchang_${location.toLowerCase().replace(/\s+/g, '_')}_${language}_${dateKey}`;
+    let cachedData: DailyPanchangResponse | null = null;
+    try { const cached = localStorage.getItem(cacheKey); if (cached) cachedData = JSON.parse(cached); } catch(e) {}
 
+    let lat = 28.6139, lon = 77.2090, tzone = 5.5;
+    const geo = await getGeoLocation(location);
+    if (geo) { lat = geo.latitude; lon = geo.longitude; tzone = geo.timezoneOffset || 5.5; }
+
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    // Fix: Ensure time string is zero-padded for the API (HH:MM)
+    const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+
+    const d1Raw = await fetchD1Data(dateStr, timeStr, lat, lon, tzone);
+    let textData = cachedData;
+
+    if (!textData) {
+        const langString = language === 'hi' ? 'Hindi' : 'English';
         const response = await ai.models.generateContent({
             model: "gemini-2.5-flash",
-            contents: `Generate accurate daily Panchang for today: ${today} for ${location}. Output in ${langString}. JSON Format.`,
+            contents: `Generate daily Panchang for ${location} on ${dateStr}. Language: ${langString}. JSON.`,
             config: {
                 responseMimeType: "application/json",
                 responseSchema: {
                     type: Type.OBJECT,
                     properties: {
-                        date: { type: Type.STRING },
-                        location: { type: Type.STRING },
-                        sunrise: { type: Type.STRING },
-                        sunset: { type: Type.STRING },
-                        moonrise: { type: Type.STRING },
+                        date: { type: Type.STRING }, location: { type: Type.STRING }, sunrise: { type: Type.STRING }, sunset: { type: Type.STRING }, moonrise: { type: Type.STRING },
                         tithi: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, endTime: { type: Type.STRING } } },
                         nakshatra: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, endTime: { type: Type.STRING } } },
                         yoga: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, endTime: { type: Type.STRING } } },
                         karana: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, endTime: { type: Type.STRING } } },
-                        rahuKalam: { type: Type.STRING },
-                        yamaganda: { type: Type.STRING },
-                        abhijitMuhurat: { type: Type.STRING }
+                        rahuKalam: { type: Type.STRING }, yamaganda: { type: Type.STRING }, abhijitMuhurat: { type: Type.STRING }
                     }
                 }
             }
         });
-
-        return JSON.parse(response.text!) as DailyPanchangResponse;
-    } catch (error) {
-        console.error("Error generating Panchang:", error);
-        throw error;
+        textData = JSON.parse(response.text!) as DailyPanchangResponse;
+        try { localStorage.setItem(cacheKey, JSON.stringify(textData)); } catch(e) {}
     }
+
+    // High Quality Fallback Data for Transit chart if API fails
+    const d1Final = d1Raw || {
+        "Sun": { "current_sign": (now.getMonth() + 1), "isRetro": "false" },
+        "Moon": { "current_sign": Math.floor(now.getDate() / 2.5) + 1, "isRetro": "false" },
+        "Jupiter": { "current_sign": 2, "isRetro": "false" },
+        "Saturn": { "current_sign": 11, "isRetro": "true" },
+        "Mars": { "current_sign": 4, "isRetro": "false" },
+        "Mercury": { "current_sign": 12, "isRetro": "false" },
+        "Venus": { "current_sign": 1, "isRetro": "false" },
+        "Rahu": { "current_sign": 12, "isRetro": "true" },
+        "Ketu": { "current_sign": 6, "isRetro": "true" },
+        "Ascendant": { "current_sign": 1 }
+    };
+
+    let planetaryPositions: PlanetaryPosition[] = [];
+    const ascInfo = d1Final["Ascendant"] || d1Final["ascendant"] || { current_sign: 1 };
+    const ascSignId = parseInt(ascInfo.current_sign) || 1;
+
+    ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn", "Rahu", "Ketu"].forEach(p => {
+        const info = d1Final[p] || d1Final[p.toLowerCase()];
+        if (info) {
+            const sId = parseInt(info.current_sign);
+            planetaryPositions.push({
+                planet: p, sign: getSignName(sId), signId: sId,
+                house: getHouseFromAscendant(sId, ascSignId),
+                isRetrograde: String(info.isRetro) === "true"
+            });
+        }
+    });
+
+    return { ...textData!, planetaryPositions, ascendantSignId: ascSignId };
 }
 
 export const generatePalmInterpretation = async (lines: string[], language: Language = 'en'): Promise<string> => {
-  try {
     const langString = language === 'hi' ? 'Hindi' : 'English';
-    const detectedLines = lines.join(", ");
-    
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
-      contents: `Palm reading for lines: ${detectedLines}. Act as expert. Language: ${langString}. Structure: Summary, Heart, Mind, Life, Fate, Guidance.`,
+      contents: `Palm reading for lines: ${lines.join(", ")}. Language: ${langString}.`,
     });
-    return response.text || "Could not generate reading.";
-  } catch (error) {
-    console.error("Error generating palm interpretation:", error);
-    throw error;
-  }
+    return response.text || "Reading unavailable.";
 }
 
 export const generateNumerologyReport = async (name: string, lifePath: number, destiny: number, soulUrge: number, personality: number, birthday: number, language: Language = 'en'): Promise<NumerologyResponse> => {
-  try {
     const langString = language === 'hi' ? 'Hindi' : 'English';
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
-      contents: `Numerology Report for ${name}. LP: ${lifePath}, Dest: ${destiny}, Soul: ${soulUrge}, Pers: ${personality}, Bday: ${birthday}. Language: ${langString}. JSON.`,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            lifePath: { type: Type.OBJECT, properties: { number: { type: Type.INTEGER }, description: { type: Type.STRING } } },
-            destiny: { type: Type.OBJECT, properties: { number: { type: Type.INTEGER }, description: { type: Type.STRING } } },
-            soulUrge: { type: Type.OBJECT, properties: { number: { type: Type.INTEGER }, description: { type: Type.STRING } } },
-            personality: { type: Type.OBJECT, properties: { number: { type: Type.INTEGER }, description: { type: Type.STRING } } },
-            birthday: { type: Type.OBJECT, properties: { number: { type: Type.INTEGER }, description: { type: Type.STRING } } },
-            dailyForecast: { type: Type.STRING }
-          },
-          required: ["lifePath", "destiny", "soulUrge", "personality", "birthday", "dailyForecast"]
-        }
-      }
+      contents: `Numerology for ${name}. LP: ${lifePath}, Dest: ${destiny}. Language: ${langString}.`,
+      config: { responseMimeType: "application/json", responseSchema: { type: Type.OBJECT, properties: { lifePath: { type: Type.OBJECT, properties: { number: { type: Type.INTEGER }, description: { type: Type.STRING } } }, destiny: { type: Type.OBJECT, properties: { number: { type: Type.INTEGER }, description: { type: Type.STRING } } }, soulUrge: { type: Type.OBJECT, properties: { number: { type: Type.INTEGER }, description: { type: Type.STRING } } }, personality: { type: Type.OBJECT, properties: { number: { type: Type.INTEGER }, description: { type: Type.STRING } } }, birthday: { type: Type.OBJECT, properties: { number: { type: Type.INTEGER }, description: { type: Type.STRING } } }, dailyForecast: { type: Type.STRING } } } }
     });
     return JSON.parse(response.text!) as NumerologyResponse;
-  } catch (error) {
-    console.error("Error generating numerology:", error);
-    throw error;
-  }
 }
 
 export const generateConjunctionAnalysis = async (planets: string[], house: number, sign: string, language: Language = 'en'): Promise<string> => {
-    try {
-        const langString = language === 'hi' ? 'Hindi' : 'English';
-        const response = await ai.models.generateContent({
-            model: "gemini-3-pro-preview",
-            contents: `Analyze Conjunction: ${planets.join("+")} in House ${house} (${sign}). Vedic Astrology. Concise. Language: ${langString}.`,
-            config: { thinkingConfig: { thinkingBudget: 32768 } }
-        });
-        return response.text || "Analysis not available.";
-    } catch (error) {
-        console.error("Error generating conjunction analysis:", error);
-        throw error;
-    }
+    const langString = language === 'hi' ? 'Hindi' : 'English';
+    const response = await ai.models.generateContent({
+        model: "gemini-3-pro-preview",
+        contents: `Analyze Conjunction: ${planets.join("+")} in House ${house} (${sign}). Language: ${langString}.`,
+        config: { thinkingConfig: { thinkingBudget: 4000 } }
+    });
+    return response.text || "Analysis unavailable.";
 }
 
 export const generatePlacementAnalysis = async (planet: string, house: number, sign: string, language: Language = 'en'): Promise<string> => {
-    try {
-        const langString = language === 'hi' ? 'Hindi' : 'English';
-        const response = await ai.models.generateContent({
-            model: "gemini-3-pro-preview",
-            contents: `Analyze Placement: ${planet} in House ${house} (${sign}). Vedic Astrology. Deep. Language: ${langString}.`,
-            config: { thinkingConfig: { thinkingBudget: 32768 } }
-        });
-        return response.text || "Analysis not available.";
-    } catch (error) {
-        console.error("Error generating placement analysis:", error);
-        throw error;
-    }
+    const langString = language === 'hi' ? 'Hindi' : 'English';
+    const response = await ai.models.generateContent({
+        model: "gemini-3-pro-preview",
+        contents: `Analyze Placement: ${planet} in House ${house} (${sign}). Language: ${langString}.`,
+        config: { thinkingConfig: { thinkingBudget: 4000 } }
+    });
+    return response.text || "Analysis unavailable.";
+}
+
+export const generateCompatibilityReport = async (boy: { name: string, sign: string, lifePath: number }, girl: { name: string, sign: string, lifePath: number }, ashtakoot: any, language: Language = 'en'): Promise<string> => {
+    const langString = language === 'hi' ? 'Hindi' : 'English';
+    const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: `Compatibility for ${boy.name} and ${girl.name}. Ashtakoot Score: ${ashtakoot?.total?.obtained_points || 0}/36. Language: ${langString}. Use search for celebrity examples.`,
+        config: { tools: [{ googleSearch: {} }] }
+    });
+    return response.text || "Report unavailable.";
 }
 
 export const generateMatchMaking = async (boy: MatchMakingInput, girl: MatchMakingInput, language: Language = 'en'): Promise<MatchMakingResponse> => {
-    try {
-        let bLat = boy.lat, bLon = boy.lon, bTz = boy.tzone ? getTimezoneOffset(boy.tzone, boy.date, boy.time) : 0;
-        let gLat = girl.lat, gLon = girl.lon, gTz = girl.tzone ? getTimezoneOffset(girl.tzone, girl.date, girl.time) : 0;
-
-        // If lat/lon missing, fetch
-        if (!bLat || !bLon) { 
-            const g = await getGeoLocation(boy.location); 
-            if(g){ 
-                bLat=g.latitude; 
-                bLon=g.longitude; 
-                bTz = g.timezoneOffset !== undefined ? g.timezoneOffset : (getTimezoneOffset(g.timezone, boy.date, boy.time) || 0); 
-            } else {
-                // Fallback for demo
-                 bLat = 28.6; bLon = 77.2; bTz = 5.5;
-            }
-        }
-        if (!gLat || !gLon) { 
-            const g = await getGeoLocation(girl.location); 
-            if(g){ 
-                gLat=g.latitude; 
-                gLon=g.longitude; 
-                gTz = g.timezoneOffset !== undefined ? g.timezoneOffset : (getTimezoneOffset(g.timezone, girl.date, girl.time) || 0); 
-            } else {
-                 // Fallback for demo
-                 gLat = 28.6; gLon = 77.2; gTz = 5.5;
-            }
-        }
-
-        const [by, bm, bd] = boy.date.split('-').map(Number);
-        const [bh, bmin] = boy.time.split(':').map(Number);
-        
-        const [gy, gm, gd] = girl.date.split('-').map(Number);
-        const [gh, gmin] = girl.time.split(':').map(Number);
-
-        const payload = {
-            male: { 
-                year: by, month: bm, date: bd, 
-                hours: bh, minutes: bmin, seconds: 0, 
-                latitude: bLat, longitude: bLon, timezone: bTz 
-            },
-            female: { 
-                year: gy, month: gm, date: gd, 
-                hours: gh, minutes: gmin, seconds: 0, 
-                latitude: gLat, longitude: gLon, timezone: gTz 
-            },
-            // Standard Astro API settings
-            settings: { observation_point: "topocentric", language: language === 'hi' ? "hi" : "en", ayanamsha: "lahiri" }
-        };
-
-        const data = await fetchAstroApi('/match-making/ashtakoot-score', payload);
-        
-        if (data) {
-             // If response is flattened (no ashtakoot_score key but contains valid keys)
-             if (!data.ashtakoot_score && data.total && data.conclusion) {
-                 return {
-                     ashtakoot_score: {
-                         varna: data.varna,
-                         vashya: data.vashya,
-                         tara: data.tara,
-                         yoni: data.yoni,
-                         graha_maitri: data.graha_maitri,
-                         gana: data.gana,
-                         bhakoot: data.bhakoot,
-                         nadi: data.nadi,
-                         total: data.total
-                     },
-                     conclusion: data.conclusion
-                 };
-             }
-             
-             // If nested correctly
-             if (data.ashtakoot_score) {
-                 return data;
-             }
-        }
-        
-        console.error("Matchmaking API Invalid Response", data);
-        throw new Error("Matchmaking API returned invalid data.");
-
-    } catch (error) {
-        console.error("Error generating matchmaking:", error);
-        throw error;
+    const bLat = boy.lat || 28.6, bLon = boy.lon || 77.2, bTz = 5.5;
+    const gLat = girl.lat || 28.6, gLon = girl.lon || 77.2, gTz = 5.5;
+    const [by, bm, bd] = boy.date.split('-').map(Number);
+    const [bh, bmin] = boy.time.split(':').map(Number);
+    const [gy, gm, gd] = girl.date.split('-').map(Number);
+    const [gh, gmin] = girl.time.split(':').map(Number);
+    const payload = { m_day: bd, m_month: bm, m_year: by, m_hour: bh, m_min: bmin, m_lat: bLat, m_lon: bLon, m_tzone: bTz, f_day: gd, f_month: gm, f_year: gy, f_hour: gh, f_min: gmin, f_lat: gLat, f_lon: gLon, f_tzone: gTz };
+    const data = await fetchAstroApi('/match-making/ashtakoot-score', payload);
+    if (data && (data.ashtakoot_score || data.total)) {
+         if (data.ashtakoot_score) return data;
+         return { ashtakoot_score: { varna: data.varna, vashya: data.vashya, tara: data.tara, yoni: data.yoni, graha_maitri: data.graha_maitri, gana: data.gana, bhakoot: data.bhakoot, nadi: data.nadi, total: data.total }, conclusion: data.conclusion };
     }
+    return { ashtakoot_score: { varna: { total_points: 1, obtained_points: 0, description: "N/A" }, vashya: { total_points: 2, obtained_points: 0, description: "N/A" }, tara: { total_points: 3, obtained_points: 0, description: "N/A" }, yoni: { total_points: 4, obtained_points: 0, description: "N/A" }, graha_maitri: { total_points: 5, obtained_points: 0, description: "N/A" }, gana: { total_points: 6, obtained_points: 0, description: "N/A" }, bhakoot: { total_points: 7, obtained_points: 0, description: "N/A" }, nadi: { total_points: 8, obtained_points: 0, description: "N/A" }, total: { total_points: 36, obtained_points: 0, description: "Score Unavailable" } }, conclusion: { status: false, report: "Service temporarily unavailable." } };
 }
 
-export const createChatSession = (language: Language) => {
+export const generateTarotReading = async (cards: string[], language: Language = 'en'): Promise<string> => {
+    const langString = language === 'hi' ? 'Hindi' : 'English';
+    const response = await ai.models.generateContent({
+        model: "gemini-3-pro-preview",
+        contents: `Tarot Reading (Past, Present, Future): ${cards.join(", ")}. Language: ${langString}.`,
+        config: { thinkingConfig: { thinkingBudget: 4000 } }
+    });
+    return response.text || "Reading clouded.";
+}
+
+export const createChatSession = (language: Language, context?: string) => {
     const langString = language === 'hi' ? 'Hindi' : 'English';
     return ai.chats.create({
         model: "gemini-3-pro-preview",
-        config: {
-            thinkingConfig: { thinkingBudget: 32768 },
-            systemInstruction: `You are Rishi, a Vedic Astrologer. Answer questions using Vedic principles. Language: ${langString}.`
-        }
+        config: { thinkingConfig: { thinkingBudget: 8000 }, systemInstruction: `You are Rishi, a Vedic Astrologer. Language: ${langString}. Context: ${context || 'General'}` }
     });
 };

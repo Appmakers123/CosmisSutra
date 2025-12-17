@@ -4,6 +4,7 @@ import { Language } from '../types';
 import { createChatSession } from '../services/geminiService';
 import { GenerateContentResponse, Chat } from '@google/genai';
 import AdBanner from './AdBanner';
+import RichText from './RichText';
 
 interface ChatBotProps {
   language: Language;
@@ -103,13 +104,13 @@ const ChatBot: React.FC<ChatBotProps> = ({ language }) => {
            {messages.map((msg, idx) => (
              <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div 
-                  className={`max-w-[80%] md:max-w-[70%] p-4 rounded-2xl text-sm md:text-base leading-relaxed ${
+                  className={`max-w-[90%] md:max-w-[70%] p-4 rounded-2xl text-sm md:text-base leading-relaxed ${
                     msg.role === 'user' 
                       ? 'bg-purple-600 text-white rounded-br-none' 
                       : 'bg-slate-700/80 text-slate-200 border border-slate-600 rounded-bl-none'
                   }`}
                 >
-                   {msg.text ? msg.text : <span className="animate-pulse">...</span>}
+                   {msg.text ? <RichText text={msg.text} /> : <span className="animate-pulse">...</span>}
                 </div>
              </div>
            ))}

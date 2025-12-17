@@ -4,6 +4,7 @@ import { Language, NumerologyInput, NumerologyResponse } from '../types';
 import { calculateLifePath, calculateDestiny, calculateSoulUrge, calculatePersonality, calculateBirthday } from '../utils/numerologyUtils';
 import { generateNumerologyReport } from '../services/geminiService';
 import AdBanner from './AdBanner';
+import RichText from './RichText';
 
 interface NumerologyProps {
   language: Language;
@@ -159,7 +160,7 @@ const Numerology: React.FC<NumerologyProps> = ({ language }) => {
               <h3 className="text-xl font-serif text-amber-200 mb-4 flex items-center gap-2">
                  <span className="text-2xl">✨</span> {t.dailyNumForecast}
               </h3>
-              <p className="text-slate-300 leading-relaxed italic text-lg">{report.dailyForecast}</p>
+              <RichText text={report.dailyForecast} className="text-slate-300 leading-relaxed italic text-lg" />
            </div>
            
            <AdBanner variant="leaderboard" />

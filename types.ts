@@ -76,6 +76,9 @@ export interface DailyPanchangResponse {
   rahuKalam: string;
   yamaganda: string;
   abhijitMuhurat: string;
+  // Added for Current Chart Feature
+  planetaryPositions?: PlanetaryPosition[];
+  ascendantSignId?: number;
 }
 
 export interface ShadbalaData {

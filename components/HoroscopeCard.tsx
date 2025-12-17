@@ -2,6 +2,7 @@ import React from 'react';
 import { HoroscopeResponse, ZodiacSignData, Language } from '../types';
 import { useTranslation } from '../utils/translations';
 import AdBanner from './AdBanner';
+import RichText from './RichText';
 
 interface HoroscopeCardProps {
   data: HoroscopeResponse;
@@ -43,9 +44,7 @@ const HoroscopeCard: React.FC<HoroscopeCardProps> = ({ data, sign, language, onB
 
         <div className="relative z-10 space-y-8">
           <div className="bg-slate-900/40 p-6 rounded-xl border border-slate-700/50">
-            <p className="text-lg leading-relaxed text-slate-200 font-light italic">
-              "{data.horoscope}"
-            </p>
+             <RichText text={data.horoscope} className="text-lg leading-relaxed text-slate-200 font-light italic" />
           </div>
           
           <AdBanner variant="leaderboard" className="my-4" />

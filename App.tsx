@@ -9,15 +9,17 @@ import PalmReading from './components/PalmReading';
 import Numerology from './components/Numerology'; 
 import LearningCenter from './components/LearningCenter'; 
 import MatchMaking from './components/MatchMaking'; 
-import ChatBot from './components/ChatBot'; // Import ChatBot
+import TarotReading from './components/TarotReading'; 
+import ChatWidget from './components/ChatWidget'; 
 import AdBanner from './components/AdBanner'; 
 import AuthModal from './components/AuthModal';
-import Logo, { downloadLogo } from './components/Logo';
+import NotificationToggle from './components/NotificationToggle';
+import Logo from './components/Logo';
 import { ZodiacSignData, HoroscopeResponse, KundaliFormData, KundaliResponse, Language, DailyPanchangResponse, User } from './types';
 import { generateHoroscope, generateKundali, generateDailyPanchang, generatePersonalizedDailyHoroscope } from './services/geminiService';
 import { useTranslation } from './utils/translations';
 
-type ViewMode = 'daily' | 'kundali' | 'panchang' | 'palm' | 'numerology' | 'learning' | 'matchmaking' | 'chat';
+type ViewMode = 'daily' | 'kundali' | 'panchang' | 'palm' | 'numerology' | 'learning' | 'matchmaking' | 'tarot';
 
 const App: React.FC = () => {
   const [mode, setMode] = useState<ViewMode>('daily');
@@ -71,7 +73,6 @@ const App: React.FC = () => {
   const handleLogout = () => {
     setUser(null);
     setMode('daily');
-    // Optional: Clear personal data on logout if desired
     setPersonalPrediction(null);
   };
 
@@ -124,7 +125,6 @@ const App: React.FC = () => {
 
   // Handlers for Kundali Generation
   const handleGenerateKundali = useCallback(async (formData: KundaliFormData) => {
-    // Check auth before generating
     if (!user) {
        setShowAuthModal(true);
        return;
@@ -159,7 +159,6 @@ const App: React.FC = () => {
       setError(null);
       setPersonalProfile(chart);
       setPersonalPrediction(null);
-      // Switch to daily mode to show the card, but special "personal" state
       setMode('daily'); 
 
       try {
@@ -172,7 +171,6 @@ const App: React.FC = () => {
           setLoading(false);
       }
   }, [language, t]);
-
 
   // Handlers for Panchang
   const fetchPanchang = useCallback(async () => {
@@ -189,16 +187,12 @@ const App: React.FC = () => {
       }
   }, [language, t]);
 
-
   const switchMode = (newMode: ViewMode) => {
-    // If switching to Panchang, fetch data immediately
     if (newMode === 'panchang') {
         fetchPanchang();
     }
     setMode(newMode);
-    // Reset specific states
     setError(null);
-    // If switching away from Daily, clear personal prediction
     if (newMode !== 'daily') {
         setPersonalPrediction(null);
         setPersonalProfile(null);
@@ -208,14 +202,11 @@ const App: React.FC = () => {
   const toggleLanguage = () => {
     const newLang = language === 'en' ? 'hi' : 'en';
     setLanguage(newLang);
-    // Note: Data refresh is handled by useEffect on [language]
   };
 
-  // Effect to re-fetch data when language changes, keeping user on same page
+  // Effect to re-fetch data when language changes
   useEffect(() => {
     const refreshData = async () => {
-        // Prevent double loading or conflicts if loading is already true (though simple check might not be enough, 
-        // simplistic approach is fine for this requirement)
         if (loading) return;
 
         if (mode === 'daily' && selectedSign) {
@@ -225,13 +216,12 @@ const App: React.FC = () => {
         } else if (mode === 'panchang') {
             fetchPanchang();
         } else if (mode === 'kundali' && currentFormData && kundaliData) {
-            // Only refresh Kundali if result is visible
             handleGenerateKundali(currentFormData);
         }
     };
     
     refreshData();
-  }, [language]); // Depend on language
+  }, [language]); 
 
   const NavButton = ({ targetMode, label, colorClass }: { targetMode: ViewMode, label: string, colorClass: string }) => (
     <button 
@@ -250,6 +240,7 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen w-full relative overflow-x-hidden text-slate-200 font-sans pb-20">
       <StarBackground />
+      <ChatWidget language={language} context={kundaliData} />
       
       {showAuthModal && (
           <AuthModal 
@@ -261,9 +252,12 @@ const App: React.FC = () => {
 
       {/* Header */}
       <header className="relative z-10 pt-8 pb-6 text-center px-4 flex flex-col items-center">
-        {/* Top Bar: Login & Language */}
-        {/* Mobile: Column (Login Top, Lang Bottom). Desktop: Row (Login Left, Lang Right) */}
+        {/* Top Bar: Notification, Login & Language */}
         <div className="absolute top-4 right-4 md:top-6 md:right-6 flex flex-col md:flex-row items-end md:items-center gap-2 md:gap-4 z-50">
+          
+          {/* Notification Toggle */}
+          <NotificationToggle language={language} />
+
           {/* Auth Button */}
           {user ? (
              <div className="flex items-center gap-3 bg-slate-800/60 border border-slate-600 rounded-full pl-4 pr-1 py-1">
@@ -308,16 +302,16 @@ const App: React.FC = () => {
           {t.subtitle}
         </p>
         
-        {/* Navigation Tabs - Updated with Numerology */}
+        {/* Navigation Tabs */}
         <div className="flex flex-wrap justify-center gap-3 mb-8 max-w-4xl">
           <NavButton targetMode="daily" label={t.dailyHoroscope} colorClass="bg-purple-600 border-purple-400" />
+          <NavButton targetMode="tarot" label={t.tarot} colorClass="bg-indigo-600 border-indigo-400" />
           <NavButton targetMode="panchang" label={t.dailyPanchang} colorClass="bg-orange-600 border-orange-400" />
           <NavButton targetMode="kundali" label={t.vedicKundali} colorClass="bg-amber-600 border-amber-400" />
           <NavButton targetMode="matchmaking" label={t.matchmaking} colorClass="bg-pink-600 border-pink-400" />
-          <NavButton targetMode="chat" label={t.aiAstrologer} colorClass="bg-violet-600 border-violet-400" />
           <NavButton targetMode="palm" label={t.palmReading} colorClass="bg-rose-600 border-rose-400" />
           <NavButton targetMode="numerology" label={t.numerology} colorClass="bg-teal-600 border-teal-400" />
-          <NavButton targetMode="learning" label={t.learning} colorClass="bg-indigo-600 border-indigo-400" />
+          <NavButton targetMode="learning" label={t.learning} colorClass="bg-cyan-600 border-cyan-400" />
         </div>
       </header>
 
@@ -357,7 +351,6 @@ const App: React.FC = () => {
         {/* Daily Horoscope View */}
         {mode === 'daily' && !loading && !error && (
           <>
-            {/* Standard Zodiac Grid if nothing selected */}
             {!selectedSign && !horoscopeData && !personalPrediction && (
               <div className="animate-fade-in w-full">
                  <div className="text-center mb-8">
@@ -365,10 +358,8 @@ const App: React.FC = () => {
                  </div>
                 <ZodiacGrid onSelect={handleSelectSign} language={language} />
                 
-                {/* Ad Banner between Grid and Profiles */}
                 <AdBanner variant="leaderboard" />
 
-                {/* Show Saved Charts as quick daily access here too? Optional but nice. */}
                 {user && savedCharts.length > 0 && (
                      <div className="mt-8 w-full max-w-5xl mx-auto px-4">
                         <h3 className="text-xl font-serif text-amber-200 mb-6 border-b border-slate-700 pb-2">Your Saved Profiles</h3>
@@ -377,7 +368,7 @@ const App: React.FC = () => {
                              <div key={chart.id} className="bg-slate-800/40 border border-slate-700 p-4 rounded-xl flex items-center justify-between hover:bg-slate-800 transition-colors">
                                 <div>
                                     <p className="font-bold text-amber-100">{chart.name}</p>
-                                    <p className="text-xs text-slate-500">{chart.date} • {chart.time}</p>
+                                    <p className="text-xs text-slate-500">{chart.date} • {chart.location}</p>
                                 </div>
                                 <button 
                                     onClick={() => handleGetPersonalDaily(chart)}
@@ -393,7 +384,6 @@ const App: React.FC = () => {
               </div>
             )}
 
-            {/* General Horoscope Result */}
             {horoscopeData && selectedSign && (
               <HoroscopeCard 
                 data={horoscopeData} 
@@ -403,19 +393,16 @@ const App: React.FC = () => {
               />
             )}
 
-            {/* Personal Horoscope Result */}
             {personalPrediction && personalProfile && (
               <div className="w-full">
-                  {/* Re-using HoroscopeCard but with custom "sign" data mocked for the profile */}
                   <HoroscopeCard 
                     data={personalPrediction}
-                    // Mocking a sign object to reuse the card layout
                     sign={{
                         id: 'personal',
                         name: personalProfile.name,
                         hindiName: personalProfile.name,
                         dateRange: personalProfile.date,
-                        element: 'Air', // Dummy
+                        element: 'Air', 
                         description: 'Personal Reading',
                         symbol: <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full"><path d="M12 2L2 7l10 5 10-5-10-5zm0 9l2.5-1.25L12 8.5l-2.5 1.25L12 11zm0 2.5l-5-2.5-5 2.5L12 22l10-8.5-5-2.5-5 2.5z"/></svg>
                     }}
@@ -428,6 +415,11 @@ const App: React.FC = () => {
               </div>
             )}
           </>
+        )}
+
+        {/* Tarot View */}
+        {mode === 'tarot' && !loading && !error && (
+            <TarotReading language={language} />
         )}
 
         {/* Panchang View */}
@@ -443,7 +435,7 @@ const App: React.FC = () => {
                 onSubmit={handleGenerateKundali} 
                 isLoading={loading} 
                 language={language}
-                savedCharts={savedCharts} // Pass saved charts
+                savedCharts={savedCharts}
                 onLoadChart={(chart) => handleGenerateKundali(chart)}
                 onDeleteChart={handleDeleteChart}
                 onGetDaily={(chart) => handleGetPersonalDaily(chart)}
@@ -455,7 +447,7 @@ const App: React.FC = () => {
                 name={kundaliName}
                 language={language}
                 onBack={handleKundaliBack}
-                onSave={handleSaveChart} // Pass Save handler
+                onSave={handleSaveChart}
               />
             )}
           </>
@@ -464,11 +456,6 @@ const App: React.FC = () => {
         {/* Matchmaking View */}
         {mode === 'matchmaking' && !loading && !error && (
             <MatchMaking language={language} />
-        )}
-
-        {/* ChatBot View */}
-        {mode === 'chat' && !loading && !error && (
-            <ChatBot language={language} />
         )}
         
         {/* Palm Reading View */}
@@ -503,17 +490,9 @@ const App: React.FC = () => {
             </svg>
             {t.followInstagram}
            </a>
-           
-           <button onClick={downloadLogo} className="flex items-center gap-2 text-amber-500 hover:text-amber-400 transition-colors group">
-             <svg className="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-             </svg>
-             Download Logo
-           </button>
         </div>
       </footer>
 
-      {/* Sticky Footer Ad for Monetization */}
       <AdBanner variant="sticky-footer" />
     </div>
   );

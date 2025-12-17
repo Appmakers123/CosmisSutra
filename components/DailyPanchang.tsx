@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { DailyPanchangResponse, Language } from '../types';
 import { useTranslation } from '../utils/translations';
 import AdBanner from './AdBanner';
+import NorthIndianChart from './NorthIndianChart';
+import SouthIndianChart from './SouthIndianChart';
 
 interface DailyPanchangProps {
   data: DailyPanchangResponse;
@@ -10,6 +12,7 @@ interface DailyPanchangProps {
 
 const DailyPanchang: React.FC<DailyPanchangProps> = ({ data, language }) => {
   const t = useTranslation(language);
+  const [chartStyle, setChartStyle] = useState<'north' | 'south'>('north');
 
   const DataRow = ({ label, value, subValue }: { label: string, value: string, subValue?: string }) => (
     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-3 border-b border-slate-700/50 last:border-0">
@@ -35,6 +38,53 @@ const DailyPanchang: React.FC<DailyPanchangProps> = ({ data, language }) => {
              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
              <p className="text-slate-300 text-sm">{data.date} • {data.location}</p>
           </div>
+        </div>
+
+        {/* Current Planetary Position Chart - Simplified visibility check */}
+        <div className="mb-10 bg-slate-900/50 border border-slate-700 rounded-xl p-6 relative">
+            <div className="flex flex-col items-center mb-4">
+                <h3 className="text-amber-400 font-serif text-lg flex items-center gap-2 mb-4">
+                    <span className="text-xl">🌌</span> {language === 'hi' ? "वर्तमान ग्रह स्थिति (गोचर)" : "Current Planetary Positions (Transit)"}
+                </h3>
+                
+                {/* Chart Style Toggle */}
+                <div className="flex gap-2 mb-6 bg-slate-800 rounded-lg p-1">
+                    <button 
+                        onClick={() => setChartStyle('north')}
+                        className={`px-3 py-1 rounded-md text-xs font-bold uppercase transition-colors ${chartStyle === 'north' ? 'bg-slate-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                    >
+                        {t.northIndianChart || "North Indian"}
+                    </button>
+                    <button 
+                        onClick={() => setChartStyle('south')}
+                        className={`px-3 py-1 rounded-md text-xs font-bold uppercase transition-colors ${chartStyle === 'south' ? 'bg-slate-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                    >
+                        {t.southIndianChart || "South Indian"}
+                    </button>
+                </div>
+
+                <div className="w-full max-w-[350px]">
+                    {data.planetaryPositions && data.planetaryPositions.length > 0 ? (
+                        chartStyle === 'north' ? (
+                            <NorthIndianChart 
+                                planets={data.planetaryPositions} 
+                                ascendantSignId={data.ascendantSignId || 1} 
+                                language={language} 
+                            />
+                        ) : (
+                            <SouthIndianChart 
+                                planets={data.planetaryPositions} 
+                                ascendantSignId={data.ascendantSignId || 1} 
+                                language={language} 
+                            />
+                        )
+                    ) : (
+                        <div className="aspect-square flex items-center justify-center border border-dashed border-slate-700 rounded-xl text-slate-500 text-sm italic">
+                            Aligning planetary data...
+                        </div>
+                    )}
+                </div>
+            </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 relative z-10">

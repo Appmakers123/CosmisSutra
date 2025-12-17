@@ -12,6 +12,7 @@ export const translations = {
     matchmaking: "Matchmaking",
     aiAstrologer: "Ask Rishi",
     learning: "Learn",
+    tarot: "Tarot Reading",
     selectZodiac: "Select Your Zodiac",
     loadingDaily: "Aligning the stars for you...",
     loadingKundali: "Calculating planetary positions...",
@@ -19,6 +20,7 @@ export const translations = {
     loadingPalm: "Analyzing palm lines...",
     loadingNumerology: "Deciphering your numbers...",
     loadingMatchmaking: "Analyzing compatibility...",
+    loadingTarot: "Interpreting the cards...",
     return: "Return",
     errorGeneric: "The stars are clouded right now. Please try again later.",
     errorKundali: "Unable to calculate planetary positions. Please try again.",
@@ -76,6 +78,17 @@ export const translations = {
     personalityNum: "Personality Number",
     birthdayNum: "Birthday Number",
     dailyNumForecast: "Today's Numerology Forecast",
+    
+    // Tarot
+    tarotTitle: "Mystic Tarot",
+    tarotSubtitle: "Focus on a question and let the cards guide you.",
+    shuffleDeck: "Shuffle Deck",
+    pickCards: "Pick 3 Cards",
+    past: "Past",
+    present: "Present",
+    future: "Future",
+    yourReading: "Your Reading",
+    reshuffle: "Reshuffle",
 
     // Learning Center
     learningTitle: "Cosmic Classroom",
@@ -155,6 +168,7 @@ export const translations = {
     matchmaking: "गुण मिलान",
     aiAstrologer: "ऋषि (AI ज्योतिषी)",
     learning: "सीखें",
+    tarot: "टैरो कार्ड",
     selectZodiac: "अपनी राशि चुनें",
     loadingDaily: "आपके लिए सितारों को संरेखित कर रहा है...",
     loadingKundali: "ग्रहों की स्थिति की गणना कर रहा है...",
@@ -162,6 +176,7 @@ export const translations = {
     loadingPalm: "हस्तरेखाओं का विश्लेषण कर रहा है...",
     loadingNumerology: "आपके अंकों का विश्लेषण...",
     loadingMatchmaking: "संगति का विश्लेषण...",
+    loadingTarot: "कार्डों की व्याख्या कर रहा है...",
     return: "वापस",
     errorGeneric: "सितारे अभी धुंधले हैं। कृपया बाद में पुनः प्रयास करें।",
     errorKundali: "ग्रहों की स्थिति की गणना करने में असमर्थ। कृपया पुनः प्रयास करें।",
@@ -219,6 +234,17 @@ export const translations = {
     personalityNum: "व्यक्तित्व अंक (Personality)",
     birthdayNum: "जन्म अंक (Birthday)",
     dailyNumForecast: "आज का अंक राशिफल",
+
+    // Tarot
+    tarotTitle: "रहस्यवादी टैरो",
+    tarotSubtitle: "एक प्रश्न पर ध्यान केंद्रित करें और कार्डों को आपका मार्गदर्शन करने दें।",
+    shuffleDeck: "ताश फेंटें",
+    pickCards: "3 कार्ड चुनें",
+    past: "भूतकाल",
+    present: "वर्तमान",
+    future: "भविष्य",
+    yourReading: "आपका फल",
+    reshuffle: "फिर से फेंटें",
 
     // Learning Center
     learningTitle: "ज्योतिष कक्षा",

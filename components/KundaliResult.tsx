@@ -3,6 +3,9 @@ import { KundaliResponse, Language } from '../types';
 import { useTranslation } from '../utils/translations';
 import { translatePlanet, translateSign } from '../constants';
 import AdBanner from './AdBanner';
+import RichText from './RichText';
+import SouthIndianChart from './SouthIndianChart';
+import NorthIndianChart from './NorthIndianChart';
 
 interface KundaliResultProps {
   data: KundaliResponse;
@@ -15,6 +18,7 @@ interface KundaliResultProps {
 const KundaliResult: React.FC<KundaliResultProps> = ({ data, name, language, onBack, onSave }) => {
   const t = useTranslation(language);
   const [activeChart, setActiveChart] = useState<'d1' | 'd9'>('d1'); // Toggle between D1 (Lagna) and D9 (Navamsha)
+  const [chartStyle, setChartStyle] = useState<'north' | 'south'>('north');
 
   // Find max strength to normalize bars
   const maxStrength = data.charts.shadbala && data.charts.shadbala.length > 0 ? Math.max(...data.charts.shadbala.map(s => s.strength)) : 10;
@@ -78,20 +82,57 @@ const KundaliResult: React.FC<KundaliResultProps> = ({ data, name, language, onB
                     {t.navamshaChart} (D9)
                 </button>
             </div>
+            
+            {/* Chart Style Toggle */}
+            <div className="flex gap-2 mb-4 bg-slate-800 rounded-lg p-1">
+                <button 
+                  onClick={() => setChartStyle('north')}
+                  className={`px-3 py-1 rounded-md text-xs font-bold uppercase transition-colors ${chartStyle === 'north' ? 'bg-slate-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                >
+                   {t.northIndianChart || "North Indian"}
+                </button>
+                <button 
+                    onClick={() => setChartStyle('south')}
+                    className={`px-3 py-1 rounded-md text-xs font-bold uppercase transition-colors ${chartStyle === 'south' ? 'bg-slate-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                >
+                    {t.southIndianChart || "South Indian"}
+                </button>
+            </div>
 
             <h3 className="text-amber-200 font-serif mb-4 text-lg">
                 {activeChart === 'd1' ? t.janamKundali : t.navamshaChart}
             </h3>
             
-            <div className="w-full max-w-[400px] mx-auto bg-slate-100 rounded-lg shadow-2xl overflow-hidden p-2">
-                 {activeChart === 'd1' && data.charts.d1Svg ? (
-                     <div className="w-full h-full" dangerouslySetInnerHTML={{ __html: data.charts.d1Svg }} />
-                 ) : activeChart === 'd9' && data.charts.d9Svg ? (
-                     <div className="w-full h-full" dangerouslySetInnerHTML={{ __html: data.charts.d9Svg }} />
+            <div className="w-full max-w-[400px] mx-auto p-2 animate-fade-in">
+                 {/* Logic based rendering using Components instead of static SVG */}
+                 {activeChart === 'd1' ? (
+                     chartStyle === 'north' ? (
+                        <NorthIndianChart 
+                            planets={data.charts.planetaryPositions} 
+                            ascendantSignId={data.basicDetails.ascendantSignId} 
+                            language={language} 
+                        />
+                     ) : (
+                        <SouthIndianChart 
+                            planets={data.charts.planetaryPositions} 
+                            ascendantSignId={data.basicDetails.ascendantSignId} 
+                            language={language} 
+                        />
+                     )
                  ) : (
-                     <div className="aspect-square flex items-center justify-center bg-slate-900 text-slate-500 text-sm">
-                         Chart Unavailable
-                     </div>
+                     chartStyle === 'north' ? (
+                        <NorthIndianChart 
+                            planets={data.charts.navamshaPositions} 
+                            ascendantSignId={data.charts.navamshaAscendantSignId} 
+                            language={language} 
+                        />
+                     ) : (
+                        <SouthIndianChart 
+                            planets={data.charts.navamshaPositions} 
+                            ascendantSignId={data.charts.navamshaAscendantSignId} 
+                            language={language} 
+                        />
+                     )
                  )}
             </div>
             
@@ -189,9 +230,7 @@ const KundaliResult: React.FC<KundaliResultProps> = ({ data, name, language, onB
                                     {item.position}
                                 </span>
                             </div>
-                            <p className="text-sm text-slate-300 leading-relaxed font-light">
-                                {item.analysis}
-                            </p>
+                            <RichText text={item.analysis} className="text-sm text-slate-300 leading-relaxed font-light" />
                         </div>
                     ))}
                 </div>
@@ -231,9 +270,7 @@ const KundaliResult: React.FC<KundaliResultProps> = ({ data, name, language, onB
                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                            {t.dashaImpact || "Current Period Impact"}
                         </h4>
-                        <p className="text-slate-300 leading-relaxed text-lg font-light">
-                            {data.dasha.analysis}
-                        </p>
+                        <RichText text={data.dasha.analysis} className="text-slate-300 leading-relaxed text-lg font-light" />
                     </div>
                 </div>
             </div>
@@ -316,7 +353,7 @@ const KundaliResult: React.FC<KundaliResultProps> = ({ data, name, language, onB
                     {data.details.yogas.map((yoga, idx) => (
                         <div key={idx} className="p-4 bg-slate-900/50 rounded-lg border-l-4 border-amber-600">
                             <h4 className="text-md font-bold text-amber-100">{yoga.name}</h4>
-                            <p className="text-sm text-slate-300 mt-1 leading-relaxed">{yoga.description}</p>
+                            <RichText text={yoga.description} className="text-sm text-slate-300 mt-1 leading-relaxed" />
                         </div>
                     ))}
                 </div>
@@ -337,7 +374,7 @@ const KundaliResult: React.FC<KundaliResultProps> = ({ data, name, language, onB
                             </div>
                             <div>
                                 <h4 className="text-md font-bold text-teal-100 mb-1">{remedy.title}</h4>
-                                <p className="text-sm text-slate-300 leading-relaxed">{remedy.description}</p>
+                                <RichText text={remedy.description} className="text-sm text-slate-300 leading-relaxed" />
                             </div>
                         </div>
                     ))}
@@ -345,7 +382,7 @@ const KundaliResult: React.FC<KundaliResultProps> = ({ data, name, language, onB
             </div>
         )}
 
-        {/* Gemstone Recommendations (Enhanced) */}
+        {/* Gemstone Recommendations (Enhanced with safety checks) */}
         {data.details?.gemstones && (
              <div className="bg-slate-800/60 border border-slate-700 rounded-xl p-6 relative overflow-hidden">
                  {/* Background decoration */}
@@ -357,85 +394,91 @@ const KundaliResult: React.FC<KundaliResultProps> = ({ data, name, language, onB
                 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
                     {/* Life Stone */}
-                    <div className="flex flex-col p-5 bg-slate-900/50 rounded-xl border border-amber-500/20 hover:border-amber-500/40 transition-colors group">
-                        <span className="text-xs text-slate-500 uppercase tracking-widest mb-2 font-bold">{language === 'hi' ? "जीवन रत्न" : "Life Stone"}</span>
-                        <div className="flex items-center gap-3 mb-3">
-                            <div className="w-10 h-10 rounded-full bg-red-900/30 flex items-center justify-center border border-red-500/30 text-xl">
-                                🔴
+                    {data.details.gemstones.life && (
+                        <div className="flex flex-col p-5 bg-slate-900/50 rounded-xl border border-amber-500/20 hover:border-amber-500/40 transition-colors group">
+                            <span className="text-xs text-slate-500 uppercase tracking-widest mb-2 font-bold">{language === 'hi' ? "जीवन रत्न" : "Life Stone"}</span>
+                            <div className="flex items-center gap-3 mb-3">
+                                <div className="w-10 h-10 rounded-full bg-red-900/30 flex items-center justify-center border border-red-500/30 text-xl">
+                                    🔴
+                                </div>
+                                <div>
+                                    <span className="text-lg font-bold text-amber-100 block group-hover:text-white transition-colors">{data.details.gemstones.life.gem}</span>
+                                    <span className="text-xs text-slate-400">{data.details.gemstones.life.name}</span>
+                                </div>
                             </div>
-                            <div>
-                                <span className="text-lg font-bold text-amber-100 block group-hover:text-white transition-colors">{data.details.gemstones.life.gem}</span>
-                                <span className="text-xs text-slate-400">{data.details.gemstones.life.name}</span>
+                            <div className="space-y-1 mb-3">
+                                <div className="text-xs text-slate-400 flex justify-between">
+                                    <span>Finger:</span> <span className="text-slate-300">{data.details.gemstones.life.wear_finger}</span>
+                                </div>
+                                <div className="text-xs text-slate-400 flex justify-between">
+                                    <span>Metal:</span> <span className="text-slate-300">{data.details.gemstones.life.wear_metal}</span>
+                                </div>
                             </div>
+                            {data.details.gemstones.life.reason && (
+                                <p className="mt-auto pt-3 border-t border-slate-700/50 text-xs text-slate-400 italic">
+                                    "{data.details.gemstones.life.reason}"
+                                </p>
+                            )}
                         </div>
-                        <div className="space-y-1 mb-3">
-                            <div className="text-xs text-slate-400 flex justify-between">
-                                <span>Finger:</span> <span className="text-slate-300">{data.details.gemstones.life.wear_finger}</span>
-                            </div>
-                            <div className="text-xs text-slate-400 flex justify-between">
-                                <span>Metal:</span> <span className="text-slate-300">{data.details.gemstones.life.wear_metal}</span>
-                            </div>
-                        </div>
-                        {data.details.gemstones.life.reason && (
-                            <p className="mt-auto pt-3 border-t border-slate-700/50 text-xs text-slate-400 italic">
-                                "{data.details.gemstones.life.reason}"
-                            </p>
-                        )}
-                    </div>
+                    )}
 
                     {/* Lucky Stone */}
-                    <div className="flex flex-col p-5 bg-slate-900/50 rounded-xl border border-emerald-500/20 hover:border-emerald-500/40 transition-colors group">
-                        <span className="text-xs text-slate-500 uppercase tracking-widest mb-2 font-bold">{language === 'hi' ? "भाग्य रत्न" : "Lucky Stone"}</span>
-                        <div className="flex items-center gap-3 mb-3">
-                            <div className="w-10 h-10 rounded-full bg-emerald-900/30 flex items-center justify-center border border-emerald-500/30 text-xl">
-                                🟢
+                    {data.details.gemstones.lucky && (
+                        <div className="flex flex-col p-5 bg-slate-900/50 rounded-xl border border-emerald-500/20 hover:border-emerald-500/40 transition-colors group">
+                            <span className="text-xs text-slate-500 uppercase tracking-widest mb-2 font-bold">{language === 'hi' ? "भाग्य रत्न" : "Lucky Stone"}</span>
+                            <div className="flex items-center gap-3 mb-3">
+                                <div className="w-10 h-10 rounded-full bg-emerald-900/30 flex items-center justify-center border border-emerald-500/30 text-xl">
+                                    🟢
+                                </div>
+                                <div>
+                                    <span className="text-lg font-bold text-emerald-100 block group-hover:text-white transition-colors">{data.details.gemstones.lucky.gem}</span>
+                                    <span className="text-xs text-slate-400">{data.details.gemstones.lucky.name}</span>
+                                </div>
                             </div>
-                            <div>
-                                <span className="text-lg font-bold text-emerald-100 block group-hover:text-white transition-colors">{data.details.gemstones.lucky.gem}</span>
-                                <span className="text-xs text-slate-400">{data.details.gemstones.lucky.name}</span>
+                             <div className="space-y-1 mb-3">
+                                <div className="text-xs text-slate-400 flex justify-between">
+                                    <span>Finger:</span> <span className="text-slate-300">{data.details.gemstones.lucky.wear_finger}</span>
+                                </div>
+                                <div className="text-xs text-slate-400 flex justify-between">
+                                    <span>Metal:</span> <span className="text-slate-300">{data.details.gemstones.lucky.wear_metal}</span>
+                                </div>
                             </div>
+                            {data.details.gemstones.lucky.reason && (
+                                <p className="mt-auto pt-3 border-t border-slate-700/50 text-xs text-slate-400 italic">
+                                    "{data.details.gemstones.lucky.reason}"
+                                </p>
+                            )}
                         </div>
-                         <div className="space-y-1 mb-3">
-                            <div className="text-xs text-slate-400 flex justify-between">
-                                <span>Finger:</span> <span className="text-slate-300">{data.details.gemstones.lucky.wear_finger}</span>
-                            </div>
-                            <div className="text-xs text-slate-400 flex justify-between">
-                                <span>Metal:</span> <span className="text-slate-300">{data.details.gemstones.lucky.wear_metal}</span>
-                            </div>
-                        </div>
-                        {data.details.gemstones.lucky.reason && (
-                            <p className="mt-auto pt-3 border-t border-slate-700/50 text-xs text-slate-400 italic">
-                                "{data.details.gemstones.lucky.reason}"
-                            </p>
-                        )}
-                    </div>
+                    )}
 
                     {/* Benefic Stone */}
-                    <div className="flex flex-col p-5 bg-slate-900/50 rounded-xl border border-blue-500/20 hover:border-blue-500/40 transition-colors group">
-                        <span className="text-xs text-slate-500 uppercase tracking-widest mb-2 font-bold">{language === 'hi' ? "लाभकारी रत्न" : "Benefic Stone"}</span>
-                        <div className="flex items-center gap-3 mb-3">
-                            <div className="w-10 h-10 rounded-full bg-blue-900/30 flex items-center justify-center border border-blue-500/30 text-xl">
-                                🔵
+                    {data.details.gemstones.benefic && (
+                        <div className="flex flex-col p-5 bg-slate-900/50 rounded-xl border border-blue-500/20 hover:border-blue-500/40 transition-colors group">
+                            <span className="text-xs text-slate-500 uppercase tracking-widest mb-2 font-bold">{language === 'hi' ? "लाभकारी रत्न" : "Benefic Stone"}</span>
+                            <div className="flex items-center gap-3 mb-3">
+                                <div className="w-10 h-10 rounded-full bg-blue-900/30 flex items-center justify-center border border-blue-500/30 text-xl">
+                                    🔵
+                                </div>
+                                <div>
+                                    <span className="text-lg font-bold text-blue-100 block group-hover:text-white transition-colors">{data.details.gemstones.benefic.gem}</span>
+                                    <span className="text-xs text-slate-400">{data.details.gemstones.benefic.name}</span>
+                                </div>
                             </div>
-                            <div>
-                                <span className="text-lg font-bold text-blue-100 block group-hover:text-white transition-colors">{data.details.gemstones.benefic.gem}</span>
-                                <span className="text-xs text-slate-400">{data.details.gemstones.benefic.name}</span>
+                             <div className="space-y-1 mb-3">
+                                <div className="text-xs text-slate-400 flex justify-between">
+                                    <span>Finger:</span> <span className="text-slate-300">{data.details.gemstones.benefic.wear_finger}</span>
+                                </div>
+                                <div className="text-xs text-slate-400 flex justify-between">
+                                    <span>Metal:</span> <span className="text-slate-300">{data.details.gemstones.benefic.wear_metal}</span>
+                                </div>
                             </div>
+                            {data.details.gemstones.benefic.reason && (
+                                <p className="mt-auto pt-3 border-t border-slate-700/50 text-xs text-slate-400 italic">
+                                    "{data.details.gemstones.benefic.reason}"
+                                </p>
+                            )}
                         </div>
-                         <div className="space-y-1 mb-3">
-                            <div className="text-xs text-slate-400 flex justify-between">
-                                <span>Finger:</span> <span className="text-slate-300">{data.details.gemstones.benefic.wear_finger}</span>
-                            </div>
-                            <div className="text-xs text-slate-400 flex justify-between">
-                                <span>Metal:</span> <span className="text-slate-300">{data.details.gemstones.benefic.wear_metal}</span>
-                            </div>
-                        </div>
-                        {data.details.gemstones.benefic.reason && (
-                            <p className="mt-auto pt-3 border-t border-slate-700/50 text-xs text-slate-400 italic">
-                                "{data.details.gemstones.benefic.reason}"
-                            </p>
-                        )}
-                    </div>
+                    )}
                 </div>
              </div>
         )}
@@ -472,28 +515,28 @@ const KundaliResult: React.FC<KundaliResultProps> = ({ data, name, language, onB
               <h3 className="flex items-center text-xl font-serif text-teal-200 mb-3">
                 <span className="mr-2 text-2xl">☸</span> {t.personality}
               </h3>
-              <p className="text-slate-300 leading-relaxed font-light text-sm md:text-base">{data.predictions.general}</p>
+              <RichText text={data.predictions.general} className="text-slate-300 leading-relaxed font-light text-sm md:text-base" />
             </div>
 
             <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-6 hover:bg-slate-800/80 transition-colors">
               <h3 className="flex items-center text-xl font-serif text-amber-200 mb-3">
                 <span className="mr-2 text-2xl">₹</span> {t.careerWealth}
               </h3>
-              <p className="text-slate-300 leading-relaxed font-light text-sm md:text-base">{data.predictions.career}</p>
+              <RichText text={data.predictions.career} className="text-slate-300 leading-relaxed font-light text-sm md:text-base" />
             </div>
 
             <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-6 hover:bg-slate-800/80 transition-colors">
               <h3 className="flex items-center text-xl font-serif text-pink-200 mb-3">
                 <span className="mr-2 text-2xl">❤</span> {t.loveMarriage}
               </h3>
-              <p className="text-slate-300 leading-relaxed font-light text-sm md:text-base">{data.predictions.love}</p>
+              <RichText text={data.predictions.love} className="text-slate-300 leading-relaxed font-light text-sm md:text-base" />
             </div>
              
              <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-6 hover:bg-slate-800/80 transition-colors">
               <h3 className="flex items-center text-xl font-serif text-emerald-200 mb-3">
                 <span className="mr-2 text-2xl">⚕</span> {t.health}
               </h3>
-              <p className="text-slate-300 leading-relaxed font-light text-sm md:text-base">{data.predictions.health}</p>
+              <RichText text={data.predictions.health} className="text-slate-300 leading-relaxed font-light text-sm md:text-base" />
             </div>
         </div>
       </div>
