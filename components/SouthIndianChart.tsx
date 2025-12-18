@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { PlanetaryPosition, Language } from '../types';
 import { translatePlanet } from '../constants';
@@ -8,15 +9,7 @@ interface SouthIndianChartProps {
   language: Language;
 }
 
-const SouthIndianChart: React.FC<SouthIndianChartProps> = ({ planets, ascendantSignId, language }) => {
-  // South Indian Chart Fixed Layout
-  // 12 Pisces | 1 Aries    | 2 Taurus  | 3 Gemini
-  // 11 Aqua   |            |           | 4 Cancer
-  // 10 Cap    |            |           | 5 Leo
-  // 9 Sag     | 8 Scorpio  | 7 Libra   | 6 Virgo
-
-  // Mapping grid positions to Sign IDs
-  // We will render 16 cells (4x4 grid). Center 4 are empty/title.
+const SouthIndianChart: React.FC<SouthIndianChartProps> = ({ planets = [], ascendantSignId, language }) => {
   const cellMap = [
     { signId: 12, label: 'Pisces' }, { signId: 1, label: 'Aries' }, { signId: 2, label: 'Taurus' }, { signId: 3, label: 'Gemini' },
     { signId: 11, label: 'Aquarius' }, { isCenter: true }, { isCenter: true }, { signId: 4, label: 'Cancer' },
@@ -25,7 +18,7 @@ const SouthIndianChart: React.FC<SouthIndianChartProps> = ({ planets, ascendantS
   ];
 
   const getPlanetsInSign = (signId: number) => {
-    const inSign = planets.filter(p => p.signId === signId);
+    const inSign = (planets || []).filter(p => p.signId === signId);
     const elements = inSign.map(p => {
       const shortName = translatePlanet(p.planet, language).substring(0, 2);
       return (
@@ -47,7 +40,6 @@ const SouthIndianChart: React.FC<SouthIndianChartProps> = ({ planets, ascendantS
 
   return (
     <div className="w-full max-w-[400px] mx-auto aspect-square bg-slate-900 border-2 border-amber-600/50 rounded-lg shadow-2xl overflow-hidden grid grid-cols-4 grid-rows-4 relative">
-       {/* Background Grid Lines */}
        <div className="absolute inset-0 grid grid-cols-4 grid-rows-4 pointer-events-none">
          {Array.from({ length: 16 }).map((_, i) => (
            <div key={i} className="border border-amber-800/30"></div>
@@ -56,7 +48,6 @@ const SouthIndianChart: React.FC<SouthIndianChartProps> = ({ planets, ascendantS
 
        {cellMap.map((cell, idx) => {
          if (cell.isCenter) {
-           // Only render content for the top-left center block to span correctly if needed, or just leave empty
            if (idx === 5) {
              return (
                <div key={idx} className="col-span-2 row-span-2 flex items-center justify-center p-2 bg-slate-900/50">
@@ -64,14 +55,10 @@ const SouthIndianChart: React.FC<SouthIndianChartProps> = ({ planets, ascendantS
                    <h4 className="text-amber-500 font-serif text-sm tracking-widest uppercase opacity-80">
                         {language === 'hi' ? 'राशि चक्र' : 'Rashi Chart'}
                    </h4>
-                   <div className="w-12 h-12 mx-auto mt-2 opacity-20">
-                     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zm0 9l2.5-1.25L12 8.5l-2.5 1.25L12 11zm0 2.5l-5-2.5-5 2.5L12 22l10-8.5-5-2.5-5 2.5z"/></svg>
-                   </div>
                  </div>
                </div>
              );
            }
-           if (idx === 6 || idx === 9 || idx === 10) return null; // Skip occupied cells
            return null;
          }
 

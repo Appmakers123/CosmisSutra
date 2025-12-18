@@ -1,5 +1,15 @@
 {
-  "name": "CosmicSutra",
-  "description": "Premium Vedic Astrology and Daily Horoscope. Generate accurate Kundali, discover planetary positions, and receive AI-powered predictions.",
-  "requestFramePermissions": []
+  "name": "CosmicSutra Academy",
+  "description": "An advanced educational platform for Vedic Astrology, Numerology, Tarot, and Esoteric Sciences. Learn the mechanics of destiny through interactive labs and AI-powered readings.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ],
+  "android": {
+    "permissions": [
+      "android.permission.CAMERA",
+      "android.permission.INTERNET",
+      "android.permission.RECORD_AUDIO"
+    ]
+  }
 }

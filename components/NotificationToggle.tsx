@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Language } from '../types';
 
@@ -45,8 +46,8 @@ const NotificationToggle: React.FC<NotificationToggleProps> = ({ language }) => 
       try {
         new Notification(title, {
           body,
-          icon: '/vite.svg', // Uses default vite icon as placeholder
-          tag: 'daily-horoscope' // Prevents stacking
+          icon: '/favicon.ico',
+          tag: 'daily-horoscope'
         });
         localStorage.setItem('last_notification_date', today);
       } catch (e) {
@@ -62,21 +63,18 @@ const NotificationToggle: React.FC<NotificationToggleProps> = ({ language }) => 
     }
 
     if (enabled) {
-      // We can't programmatically revoke permission, but we can stop sending them logic-wise
       setEnabled(false);
       localStorage.setItem('cosmic_notifications', 'false');
     } else {
-      // Request Permission
       const permission = await Notification.requestPermission();
       if (permission === 'granted') {
         setEnabled(true);
         localStorage.setItem('cosmic_notifications', 'true');
         
-        // Send a test/confirmation immediately
         const title = language === 'hi' ? 'अधिसूचनाएं चालू हैं!' : 'Notifications Enabled!';
         new Notification(title, {
             body: language === 'hi' ? 'हम आपको प्रतिदिन याद दिलाएंगे।' : 'We will remind you to check your stars daily.',
-            icon: '/vite.svg'
+            icon: '/favicon.ico'
         });
       } else {
         alert(language === 'hi' ? 'कृपया ब्राउज़र सेटिंग में सूचनाओं की अनुमति दें।' : 'Please allow notifications in your browser settings.');
@@ -97,7 +95,6 @@ const NotificationToggle: React.FC<NotificationToggleProps> = ({ language }) => 
       title={enabled ? (language === 'hi' ? "सूचनाएं सक्रिय" : "Notifications Active") : (language === 'hi' ? "दैनिक सूचनाएं सक्षम करें" : "Enable Daily Notifications")}
     >
       {enabled ? (
-        // Active Bell with Ringing Animation effect
         <div className="relative">
             <span className="absolute -top-1 -right-1 flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
@@ -108,7 +105,6 @@ const NotificationToggle: React.FC<NotificationToggleProps> = ({ language }) => 
             </svg>
         </div>
       ) : (
-        // Inactive Bell
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
         </svg>

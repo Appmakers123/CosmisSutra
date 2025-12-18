@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { User, Language } from '../types';
 import { useTranslation } from '../utils/translations';
@@ -16,20 +17,24 @@ const AuthModal: React.FC<AuthModalProps> = ({ onLogin, onClose, language }) => 
   const handleSimulatedLogin = (type: 'email' | 'google') => {
     // In a real app, this would be a Firebase/Auth0 call.
     // Simulating user data.
+    // Fix: Added missing 'karma' property to satisfy User type
     const mockUser: User = {
       id: '12345',
       name: type === 'google' ? 'Cosmic Traveler' : email.split('@')[0] || 'Seeker',
       email: type === 'google' ? 'traveler@gmail.com' : email,
+      karma: 0,
     };
     onLogin(mockUser);
   };
 
   const handleGuestLogin = () => {
+    // Fix: Added missing 'karma' property to satisfy User type
     const guestUser: User = {
       id: 'guest',
       name: 'Guest',
       email: '',
-      isGuest: true
+      isGuest: true,
+      karma: 5,
     };
     onLogin(guestUser);
   };

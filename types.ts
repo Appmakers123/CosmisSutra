@@ -1,12 +1,16 @@
+
 import React from 'react';
 
 export type Language = 'en' | 'hi';
+
+export type ViewMode = 'daily' | 'kundali' | 'panchang' | 'numerology' | 'learning' | 'matchmaking' | 'tarot' | 'compatibility' | 'cosmic-art' | 'story-hub' | 'games' | 'palm-reading' | 'mystic-lens' | 'muhurat' | 'transits' | 'mantra' | 'rudraksh' | 'occult-vault';
 
 export interface User {
   id: string;
   name: string;
   email: string;
   isGuest?: boolean;
+  karma: number;
 }
 
 export interface ZodiacSignData {
@@ -27,14 +31,8 @@ export interface HoroscopeResponse {
   compatibility: string;
 }
 
-export interface HistoryItem {
-  date: string;
-  signId: string;
-  data: HoroscopeResponse;
-}
-
 export interface KundaliFormData {
-  id?: string; // Added ID for saved charts
+  id?: string;
   name: string;
   date: string;
   time: string;
@@ -47,22 +45,12 @@ export interface KundaliFormData {
 export interface PlanetaryPosition {
   planet: string;
   sign: string;
-  signId: number; // 1 = Aries, 12 = Pisces
+  signId: number; 
   house: number;
   isRetrograde?: boolean;
+  nakshatra?: string;
 }
 
-export interface PanchangDetails {
-  tithi: string;
-  vara: string;
-  nakshatra: string;
-  yoga: string;
-  karana: string;
-  sunrise?: string;
-  sunset?: string;
-}
-
-// Separate type for the Daily Panchang Tab
 export interface DailyPanchangResponse {
   date: string;
   location: string;
@@ -76,68 +64,6 @@ export interface DailyPanchangResponse {
   rahuKalam: string;
   yamaganda: string;
   abhijitMuhurat: string;
-  // Added for Current Chart Feature
-  planetaryPositions?: PlanetaryPosition[];
-  ascendantSignId?: number;
-}
-
-export interface ShadbalaData {
-  planet: string;
-  strength: number; // Rupas or score
-  isStrong: boolean;
-}
-
-// New Types for Advanced API integration
-export interface DoshaData {
-  present: boolean;
-  one_line_description?: string;
-}
-
-export interface GemstoneSuggestion {
-  name: string;
-  gem: string;
-  wear_finger: string;
-  wear_metal: string;
-  wear_day: string;
-  reason?: string; // Reason for recommendation
-}
-
-export interface GemstoneData {
-  life: GemstoneSuggestion;
-  lucky: GemstoneSuggestion;
-  benefic: GemstoneSuggestion;
-}
-
-export interface SadeSatiData {
-  is_undergoing: boolean;
-  phase: string;
-  description: string;
-}
-
-export interface YogaData {
-  name: string;
-  description: string;
-}
-
-export interface Remedy {
-  title: string;
-  description: string;
-}
-
-export interface FavorablePoints {
-  lucky_number: number;
-  lucky_day: string;
-  lucky_metal: string;
-  lucky_stone: string;
-  friendly_numbers: string;
-  neutral_numbers: string;
-  evil_numbers: string;
-}
-
-export interface PlanetAnalysis {
-  planet: string;
-  position: string;
-  analysis: string;
 }
 
 export interface KundaliResponse {
@@ -147,31 +73,20 @@ export interface KundaliResponse {
     moonSign: string;
     sunSign: string;
     nakshatra: string;
+    name?: string;
   };
-  panchang: PanchangDetails;
+  panchang: any;
   charts: {
     planetaryPositions: PlanetaryPosition[];
     navamshaPositions: PlanetaryPosition[];
     navamshaAscendantSignId: number;
-    shadbala: ShadbalaData[];
-    d1Svg?: string; // API generated SVG for D1
-    d9Svg?: string; // API generated SVG for D9
   };
-  details: {
-    mangalDosha: DoshaData;
-    kalsarpaDosha: DoshaData;
-    sadeSati: SadeSatiData;
-    gemstones: GemstoneData;
-    yogas: YogaData[];
-    remedies?: Remedy[];
-    favorablePoints?: FavorablePoints;
-  };
-  planetAnalysis?: PlanetAnalysis[];
+  planetAnalysis?: any[];
   dasha: {
     currentMahadasha: string;
     antardasha: string;
     endsAt: string;
-    analysis?: string; // Detailed analysis of the period
+    analysis?: string;
   };
   predictions: {
     general: string;
@@ -181,25 +96,19 @@ export interface KundaliResponse {
   };
 }
 
-// Palm Reading Types
-export interface PalmPrediction {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  class: string;
-  confidence: number;
+export interface MatchMakingInput {
+    name: string;
+    date: string;
+    time: string;
+    location: string;
 }
 
-export interface PalmReadingResponse {
-    predictions: PalmPrediction[];
-    image?: { width: number; height: number };
-}
-
-// Numerology Types
-export interface NumerologyInput {
-  name: string;
-  dob: string; // YYYY-MM-DD
+export interface MatchMakingResponse {
+    ashtakoot_score: any;
+    conclusion: {
+        status: boolean;
+        report: string;
+    };
 }
 
 export interface NumerologyResponse {
@@ -211,35 +120,29 @@ export interface NumerologyResponse {
   dailyForecast: string;
 }
 
-// Matchmaking Types
-export interface MatchMakingInput {
-    name: string;
-    date: string;
-    time: string;
-    location: string;
-    lat?: number;
-    lon?: number;
-    tzone?: string;
+export interface NumerologyInput {
+  name: string;
+  dob: string;
 }
 
-export interface AshtakootScore {
-    varna: { total_points: number; obtained_points: number; description: string };
-    vashya: { total_points: number; obtained_points: number; description: string };
-    tara: { total_points: number; obtained_points: number; description: string };
-    yoni: { total_points: number; obtained_points: number; description: string };
-    graha_maitri: { total_points: number; obtained_points: number; description: string };
-    gana: { total_points: number; obtained_points: number; description: string };
-    bhakoot: { total_points: number; obtained_points: number; description: string };
-    nadi: { total_points: number; obtained_points: number; description: string };
-    total: { total_points: number; obtained_points: number; description: string };
+export interface MuhuratItem {
+    activity: string;
+    status: 'Excellent' | 'Good' | 'Average' | 'Avoid';
+    timeRange: string;
+    reason: string;
 }
 
-export interface MatchMakingResponse {
-    ashtakoot_score: AshtakootScore;
-    conclusion: {
-        status: boolean;
-        report: string;
-    };
-    male_kuta?: any; // Extra data if needed
-    female_kuta?: any;
+export interface TransitResponse {
+    currentPositions: PlanetaryPosition[];
+    personalImpact: {
+        planet: string;
+        house: number;
+        sign: string;
+        meaning: string;
+    }[];
+}
+
+export interface PalmPrediction {
+  line: string;
+  meaning: string;
 }

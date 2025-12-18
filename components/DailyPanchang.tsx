@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+
+import React from 'react';
 import { DailyPanchangResponse, Language } from '../types';
 import { useTranslation } from '../utils/translations';
 import AdBanner from './AdBanner';
-import NorthIndianChart from './NorthIndianChart';
-import SouthIndianChart from './SouthIndianChart';
 
 interface DailyPanchangProps {
   data: DailyPanchangResponse;
@@ -12,7 +11,6 @@ interface DailyPanchangProps {
 
 const DailyPanchang: React.FC<DailyPanchangProps> = ({ data, language }) => {
   const t = useTranslation(language);
-  const [chartStyle, setChartStyle] = useState<'north' | 'south'>('north');
 
   const DataRow = ({ label, value, subValue }: { label: string, value: string, subValue?: string }) => (
     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-3 border-b border-slate-700/50 last:border-0">
@@ -25,7 +23,7 @@ const DailyPanchang: React.FC<DailyPanchangProps> = ({ data, language }) => {
   );
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-4 animate-fade-in-up">
+    <div className="w-full max-w-4xl mx-auto px-4 animate-fade-in-up pb-12">
       <div className="bg-slate-800/80 backdrop-blur-md border border-amber-500/30 rounded-2xl p-6 md:p-10 shadow-2xl relative overflow-hidden">
         {/* Background Decorative */}
         <div className="absolute top-0 right-0 w-40 h-40 bg-orange-500/10 rounded-bl-full pointer-events-none"></div>
@@ -40,57 +38,10 @@ const DailyPanchang: React.FC<DailyPanchangProps> = ({ data, language }) => {
           </div>
         </div>
 
-        {/* Current Planetary Position Chart - Simplified visibility check */}
-        <div className="mb-10 bg-slate-900/50 border border-slate-700 rounded-xl p-6 relative">
-            <div className="flex flex-col items-center mb-4">
-                <h3 className="text-amber-400 font-serif text-lg flex items-center gap-2 mb-4">
-                    <span className="text-xl">🌌</span> {language === 'hi' ? "वर्तमान ग्रह स्थिति (गोचर)" : "Current Planetary Positions (Transit)"}
-                </h3>
-                
-                {/* Chart Style Toggle */}
-                <div className="flex gap-2 mb-6 bg-slate-800 rounded-lg p-1">
-                    <button 
-                        onClick={() => setChartStyle('north')}
-                        className={`px-3 py-1 rounded-md text-xs font-bold uppercase transition-colors ${chartStyle === 'north' ? 'bg-slate-600 text-white' : 'text-slate-400 hover:text-white'}`}
-                    >
-                        {t.northIndianChart || "North Indian"}
-                    </button>
-                    <button 
-                        onClick={() => setChartStyle('south')}
-                        className={`px-3 py-1 rounded-md text-xs font-bold uppercase transition-colors ${chartStyle === 'south' ? 'bg-slate-600 text-white' : 'text-slate-400 hover:text-white'}`}
-                    >
-                        {t.southIndianChart || "South Indian"}
-                    </button>
-                </div>
-
-                <div className="w-full max-w-[350px]">
-                    {data.planetaryPositions && data.planetaryPositions.length > 0 ? (
-                        chartStyle === 'north' ? (
-                            <NorthIndianChart 
-                                planets={data.planetaryPositions} 
-                                ascendantSignId={data.ascendantSignId || 1} 
-                                language={language} 
-                            />
-                        ) : (
-                            <SouthIndianChart 
-                                planets={data.planetaryPositions} 
-                                ascendantSignId={data.ascendantSignId || 1} 
-                                language={language} 
-                            />
-                        )
-                    ) : (
-                        <div className="aspect-square flex items-center justify-center border border-dashed border-slate-700 rounded-xl text-slate-500 text-sm italic">
-                            Aligning planetary data...
-                        </div>
-                    )}
-                </div>
-            </div>
-        </div>
-
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 relative z-10">
            
            {/* Sun & Moon */}
-           <div className="bg-slate-900/50 rounded-xl p-6 border border-slate-700">
+           <div className="bg-slate-900/50 rounded-xl p-6 border border-slate-700 hover:border-amber-500/20 transition-colors">
              <h3 className="text-amber-500 font-serif text-lg mb-4 flex items-center gap-2">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
                 Solar & Lunar
@@ -101,7 +52,7 @@ const DailyPanchang: React.FC<DailyPanchangProps> = ({ data, language }) => {
            </div>
 
            {/* Core Panchang */}
-           <div className="bg-slate-900/50 rounded-xl p-6 border border-slate-700">
+           <div className="bg-slate-900/50 rounded-xl p-6 border border-slate-700 hover:border-amber-500/20 transition-colors">
              <h3 className="text-amber-500 font-serif text-lg mb-4 flex items-center gap-2">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
                 Elements
@@ -113,22 +64,22 @@ const DailyPanchang: React.FC<DailyPanchangProps> = ({ data, language }) => {
            </div>
 
            {/* Timings */}
-           <div className="lg:col-span-2 bg-slate-900/50 rounded-xl p-6 border border-slate-700">
+           <div className="lg:col-span-2 bg-slate-900/50 rounded-xl p-6 border border-slate-700 hover:border-amber-500/20 transition-colors">
              <h3 className="text-amber-500 font-serif text-lg mb-4 flex items-center gap-2">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 Muhurats (Timings)
              </h3>
              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="p-4 bg-red-900/20 border border-red-700/30 rounded-lg">
-                   <p className="text-red-300 text-xs uppercase font-bold mb-1">{t.rahuKalam}</p>
+                <div className="p-4 bg-red-900/20 border border-red-700/30 rounded-lg group/item transition-all hover:bg-red-900/30">
+                   <p className="text-red-300 text-[10px] uppercase font-bold mb-1 tracking-widest">{t.rahuKalam}</p>
                    <p className="text-white text-lg font-serif">{data.rahuKalam}</p>
                 </div>
-                <div className="p-4 bg-orange-900/20 border border-orange-700/30 rounded-lg">
-                   <p className="text-orange-300 text-xs uppercase font-bold mb-1">{t.yamaganda}</p>
+                <div className="p-4 bg-orange-900/20 border border-orange-700/30 rounded-lg group/item transition-all hover:bg-orange-900/30">
+                   <p className="text-orange-300 text-[10px] uppercase font-bold mb-1 tracking-widest">{t.yamaganda}</p>
                    <p className="text-white text-lg font-serif">{data.yamaganda}</p>
                 </div>
-                <div className="p-4 bg-green-900/20 border border-green-700/30 rounded-lg">
-                   <p className="text-green-300 text-xs uppercase font-bold mb-1">{t.abhijit}</p>
+                <div className="p-4 bg-green-900/20 border border-green-700/30 rounded-lg group/item transition-all hover:bg-green-900/30">
+                   <p className="text-green-300 text-[10px] uppercase font-bold mb-1 tracking-widest">{t.abhijit}</p>
                    <p className="text-white text-lg font-serif">{data.abhijitMuhurat}</p>
                 </div>
              </div>

@@ -8,33 +8,35 @@ interface RichTextProps {
 const RichText: React.FC<RichTextProps> = ({ text, className = '' }) => {
   if (!text) return null;
 
-  const lines = text.split('\n');
+  // Pre-process: strip unwanted AI artifacts that might have bypassed service-level sanitization
+  const cleanedText = text
+    .replace(/^JSON\s*/i, "")
+    .replace(/```[a-z]*\n?/gi, "")
+    .replace(/\n?```/g, "");
+
+  const lines = cleanedText.split('\n');
   const renderedLines: React.ReactNode[] = [];
 
-  let inList = false;
   let listItems: React.ReactNode[] = [];
 
   const flushList = (keyPrefix: string) => {
       if (listItems.length > 0) {
           renderedLines.push(
-              <ul key={`${keyPrefix}-list`} className="list-disc ml-5 mb-4 space-y-1 text-slate-300">
+              <ul key={`${keyPrefix}-list`} className="list-disc ml-6 mb-5 space-y-2 text-slate-300">
                   {listItems}
               </ul>
           );
           listItems = [];
-          inList = false;
       }
   };
 
   const processInline = (str: string) => {
-      // Parser for **bold** and *italic*
-      const parts = str.split(/(\*\*.*?\*\*|\*.*?\*)/g);
+      if (!str) return "";
+      // Handle Bold (**text**)
+      const parts = str.split(/(\*\*.*?\*\*)/g);
       return parts.map((part, i) => {
           if (part.startsWith('**') && part.endsWith('**')) {
-              return <strong key={i} className="font-bold text-amber-200">{part.slice(2, -2)}</strong>;
-          }
-          if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
-              return <em key={i} className="text-purple-200 not-italic">{part.slice(1, -1)}</em>;
+              return <strong key={i} className="font-bold text-amber-200 drop-shadow-sm">{part.slice(2, -2)}</strong>;
           }
           return part;
       });
@@ -43,38 +45,45 @@ const RichText: React.FC<RichTextProps> = ({ text, className = '' }) => {
   lines.forEach((line, index) => {
       const trimmed = line.trim();
       
+      // Ignore stray characters that often appear at ends of AI strings
+      if (trimmed === '`') return;
+
       // Headers
       if (trimmed.startsWith('### ')) {
           flushList(`header-${index}`);
-          renderedLines.push(<h4 key={`h4-${index}`} className="text-lg font-serif font-bold text-amber-100 mt-4 mb-2">{processInline(trimmed.slice(4))}</h4>);
+          renderedLines.push(<h4 key={`h4-${index}`} className="text-lg font-serif font-bold text-amber-100 mt-6 mb-3">{processInline(trimmed.slice(4))}</h4>);
           return;
       }
       if (trimmed.startsWith('## ')) {
           flushList(`header-${index}`);
-          renderedLines.push(<h3 key={`h3-${index}`} className="text-xl font-serif font-bold text-amber-200 mt-5 mb-3">{processInline(trimmed.slice(3))}</h3>);
+          renderedLines.push(<h3 key={`h3-${index}`} className="text-xl font-serif font-bold text-amber-200 mt-8 mb-4 border-b border-slate-700/50 pb-2">{processInline(trimmed.slice(3))}</h3>);
           return;
       }
 
-      // List Items (Start with * or -)
-      if (trimmed.startsWith('* ') || trimmed.startsWith('- ')) {
-          inList = true;
-          listItems.push(<li key={`li-${index}`}>{processInline(trimmed.slice(2))}</li>);
+      // List Items (Support *, -, and •)
+      if (trimmed.startsWith('* ') || trimmed.startsWith('- ') || trimmed.startsWith('• ')) {
+          listItems.push(<li key={`li-${index}`} className="pl-1">{processInline(trimmed.slice(2))}</li>);
           return;
       }
 
       // Normal Text or Empty
-      flushList(`text-${index}`);
-      
       if (trimmed === '') {
-         // Skip consecutive empty lines in some cases, or render spacer
+          flushList(`space-${index}`);
+          // Add a small spacer for double newlines
+          renderedLines.push(<div key={`spacer-${index}`} className="h-2"></div>);
       } else {
-          renderedLines.push(<p key={`p-${index}`} className="mb-3 leading-relaxed text-slate-200">{processInline(trimmed)}</p>);
+          flushList(`text-${index}`);
+          renderedLines.push(<p key={`p-${index}`} className="mb-4 leading-relaxed text-slate-200 font-light">{processInline(trimmed)}</p>);
       }
   });
 
   flushList('end');
 
-  return <div className={`text-sm md:text-base ${className}`}>{renderedLines}</div>;
+  return (
+    <div className={`text-sm md:text-base selection:bg-amber-500/30 ${className}`}>
+      {renderedLines}
+    </div>
+  );
 };
 
 export default RichText;

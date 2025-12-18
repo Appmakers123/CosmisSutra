@@ -1,3 +1,4 @@
+
 {
   "name": "cosmicsutra",
   "private": true,
@@ -8,13 +9,20 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d dist"
+    "deploy": "gh-pages -d dist",
+    "static-build": "vite build",
+    "cap-init": "cap init",
+    "cap-add-android": "cap add android",
+    "cap-sync": "cap sync android",
+    "cap-open": "cap open android"
   },
   "dependencies": {
     "@google/genai": "^1.31.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "lucide-react": "^0.344.0"
+    "lucide-react": "^0.344.0",
+    "@capacitor/core": "^6.0.0",
+    "@capacitor/android": "^6.0.0"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",
@@ -25,6 +33,7 @@
     "tailwindcss": "^3.4.1",
     "typescript": "^5.2.2",
     "vite": "^5.1.4",
-    "gh-pages": "^6.1.1"
+    "gh-pages": "^6.1.1",
+    "@capacitor/cli": "^6.0.0"
   }
 }

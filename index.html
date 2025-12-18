@@ -1,38 +1,56 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CosmicSutra - Vedic AI Astrology</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+    <meta name="theme-color" content="#020617" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="manifest" href="/manifest.json" />
+    <title>CosmicSutra - Premium Vedic AI Astrology</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
       body {
         font-family: 'Lato', sans-serif;
-        background-color: #0f172a;
+        background-color: #020617;
         color: #e2e8f0;
+        cursor: default;
+        /* Mobile fixes */
+        overscroll-behavior-y: none;
+        -webkit-tap-highlight-color: transparent;
+        padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
       }
       h1, h2, h3, h4, .font-serif {
         font-family: 'Cinzel', serif;
       }
-      /* Custom scrollbar for webkit */
-      ::-webkit-scrollbar {
-        width: 8px;
+      .animate-spin-slow {
+        animation: spin 20s linear infinite;
       }
-      ::-webkit-scrollbar-track {
-        background: #0f172a; 
+      @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
       }
-      ::-webkit-scrollbar-thumb {
-        background: #4f46e5; 
-        border-radius: 4px;
+      .perspective-1000 {
+        perspective: 1000px;
       }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #6366f1; 
+      .shadow-glow {
+        box-shadow: 0 0 15px rgba(245, 158, 11, 0.4);
+      }
+      /* Custom scrollbar */
+      ::-webkit-scrollbar { width: 6px; }
+      ::-webkit-scrollbar-track { background: #020617; }
+      ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+      ::-webkit-scrollbar-thumb:hover { background: #f59e0b; }
+      
+      .animate-fade-in-up {
+        animation: fadeInUp 0.8s ease-out forwards;
+      }
+      @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
       }
     </style>
-<!-- 
-  GOOGLE ADSENSE SCRIPT 
--->
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3559865379099936"
      crossorigin="anonymous"></script>
 <script type="importmap">
@@ -50,7 +68,6 @@
 </head>
   <body>
     <div id="root"></div>
-    <!-- Entry point for the application -->
     <script type="module" src="/index.tsx"></script>
   </body>
 </html>
