@@ -26,8 +26,9 @@ import MantraLab from './components/MantraLab';
 import RudrakshLab from './components/RudrakshLab';
 import OccultVault from './components/OccultVault';
 import NotificationToggle from './components/NotificationToggle';
+import AuthModal from './components/AuthModal';
 import Logo from './components/Logo';
-import { ZodiacSignData, HoroscopeResponse, KundaliFormData, KundaliResponse, Language, DailyPanchangResponse, ViewMode } from './types';
+import { ZodiacSignData, HoroscopeResponse, KundaliFormData, KundaliResponse, Language, DailyPanchangResponse, ViewMode, User } from './types';
 import { generateHoroscope, generateKundali, generateDailyPanchang } from './services/geminiService';
 import { useTranslation } from './utils/translations';
 
@@ -37,6 +38,9 @@ const App: React.FC = () => {
   const [mode, setMode] = useState<AppViewMode>('hub');
   const [language, setLanguage] = useState<Language>('en');
   const t = useTranslation(language);
+  const [user, setUser] = useState<User | null>(null);
+  const [showAuth, setShowAuth] = useState(false);
+
   const [selectedSign, setSelectedSign] = useState<ZodiacSignData | null>(null);
   const [horoscopeData, setHoroscopeData] = useState<HoroscopeResponse | null>(null);
   const [kundaliData, setKundaliData] = useState<KundaliResponse | null>(null);
@@ -92,21 +96,16 @@ const App: React.FC = () => {
       try {
           const data = await generateDailyPanchang("New Delhi, India", language);
           setPanchangData(data);
+          setMode('panchang');
       } catch (err) { setError(t.errorGeneric); }
       finally { setLoading(false); }
   }, [language, t]);
 
   const switchMode = (newMode: AppViewMode) => {
     if (newMode === 'panchang') fetchPanchang();
-    setMode(newMode);
+    else setMode(newMode);
     window.scrollTo({ top: 0, behavior: 'smooth' });
     setError(null);
-  };
-
-  const resetDaily = () => {
-    setSelectedSign(null);
-    setHoroscopeData(null);
-    setMode('hub');
   };
 
   const FeatureCard = ({ target, label, icon, desc, category, color }: any) => (
@@ -122,6 +121,13 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen w-full relative text-slate-200 selection:bg-amber-500/30">
       <StarBackground />
+      {showAuth && (
+        <AuthModal 
+          language={language} 
+          onLogin={setUser} 
+          onClose={() => setShowAuth(false)} 
+        />
+      )}
       <ChatWidget language={language} context={kundaliData} onUseKarma={() => true} hasKarma={true} onOpenStore={() => {}} />
 
       <header className="fixed top-0 left-0 w-full z-[60] px-6 py-4 flex justify-between items-center bg-slate-900/60 border-b border-white/5 backdrop-blur-md">
@@ -129,9 +135,24 @@ const App: React.FC = () => {
            <Logo className="w-10 h-10" /><span className="text-xl font-serif font-bold text-amber-100 hidden md:block tracking-widest uppercase">CosmicSutra</span>
         </div>
         <div className="flex items-center gap-3">
+          <a 
+            href="https://appmakers123.github.io/" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="hidden sm:flex items-center gap-2 px-4 py-2 bg-slate-800/80 border border-slate-700 rounded-full hover:border-amber-500/50 transition-all text-[10px] font-bold uppercase tracking-widest text-amber-200"
+          >
+            Explore More Apps
+          </a>
           <NotificationToggle language={language} />
           <button onClick={() => setLanguage(l => l === 'en' ? 'hi' : 'en')} className="text-[10px] font-bold bg-slate-800/80 px-4 py-2 rounded-full border border-slate-700 hover:border-amber-500/50 transition-all uppercase tracking-widest">{language === 'en' ? 'हिन्दी' : 'English'}</button>
-          <div className="hidden sm:block px-3 py-1.5 bg-amber-900/20 border border-amber-500/30 rounded-full text-[9px] uppercase font-bold text-amber-400">Premium Wisdom</div>
+          {!user ? (
+            <button onClick={() => setShowAuth(true)} className="px-5 py-2 bg-amber-600 rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-amber-500 transition-colors shadow-lg">Login</button>
+          ) : (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 border border-amber-500/30 rounded-full">
+              <div className="w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center text-[10px] font-bold text-slate-900">{user.name[0]}</div>
+              <span className="text-[9px] uppercase font-bold text-amber-400">{user.karma} Karma</span>
+            </div>
+          )}
         </div>
       </header>
 
@@ -143,7 +164,14 @@ const App: React.FC = () => {
           </div>
         )}
         
-        {mode === 'hub' && !loading && !error && (
+        {error && !loading && (
+            <div className="max-w-md mx-auto mb-10 bg-red-900/20 border border-red-500/30 rounded-2xl p-6 text-center animate-fade-in">
+                <p className="text-red-300 text-sm mb-4">{error}</p>
+                <button onClick={() => setError(null)} className="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-white underline">Dismiss</button>
+            </div>
+        )}
+
+        {mode === 'hub' && !loading && (
           <div className="animate-fade-in-up space-y-16">
             <div className="text-center space-y-4">
               <h2 className="text-5xl md:text-7xl font-serif font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-100 via-white to-amber-200">CosmicSutra</h2>
@@ -189,11 +217,35 @@ const App: React.FC = () => {
                         <FeatureCard target="palm-reading" label={t.palmReading} icon="✋" desc="Hand lines analysis" category="Lines" color="from-rose-500 to-transparent" />
                     </div>
                 </section>
+                
+                <section>
+                    <div className="flex items-center gap-4 mb-8">
+                        <span className="text-xs font-serif font-bold text-pink-500 uppercase tracking-widest">IV. {language === 'en' ? 'Mystical Portals' : 'रहस्यमयी पोर्टल'}</span>
+                        <div className="h-px flex-1 bg-slate-800"></div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <FeatureCard target="tarot" label={t.tarot} icon="🃏" desc="Whispers of fate" category="Divination" color="from-purple-700 to-transparent" />
+                        <FeatureCard target="numerology" label={t.numerology} icon="🔢" desc="Number vibrations" category="Analysis" color="from-teal-500 to-transparent" />
+                        <FeatureCard target="compatibility" label={t.compatibility} icon="❤️" desc="Harmony check" category="Social" color="from-pink-500 to-transparent" />
+                        <FeatureCard target="story-hub" label={t.storyHub} icon="📖" desc="Star legends" category="Educational" color="from-yellow-500 to-transparent" />
+                    </div>
+                </section>
+
+                <section>
+                    <div className="flex items-center gap-4 mb-8">
+                        <span className="text-xs font-serif font-bold text-indigo-500 uppercase tracking-widest">V. {language === 'en' ? 'Arcane Fun' : 'दिव्य मनोरंजन'}</span>
+                        <div className="h-px flex-1 bg-slate-800"></div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <FeatureCard target="games" label={t.games} icon="🎲" desc="Astro Trivia & Riddles" category="Gaming" color="from-indigo-700 to-transparent" />
+                        <FeatureCard target="cosmic-art" label={t.cosmicArt} icon="🖼️" desc="Your Aura Vision" category="Creative" color="from-pink-700 to-transparent" />
+                    </div>
+                </section>
             </div>
           </div>
         )}
 
-        {mode === 'daily' && (!selectedSign ? <ZodiacGrid onSelect={handleSelectSign} language={language} /> : horoscopeData && <HoroscopeCard data={horoscopeData} sign={selectedSign} language={language} onBack={resetDaily} />)}
+        {mode === 'daily' && (!selectedSign ? <ZodiacGrid onSelect={handleSelectSign} language={language} /> : horoscopeData && <HoroscopeCard data={horoscopeData} sign={selectedSign} language={language} onBack={() => {setSelectedSign(null); setMode('hub');}} />)}
         {mode === 'kundali' && (kundaliData ? <KundaliResult data={kundaliData} name="Seeker" language={language} onBack={() => setMode('hub')} /> : <KundaliForm onSubmit={handleGenerateKundali} isLoading={loading} language={language} />)}
         {mode === 'panchang' && panchangData && <DailyPanchang data={panchangData} language={language} />}
         {mode === 'muhurat' && <MuhuratPlanner language={language} />}
@@ -211,9 +263,11 @@ const App: React.FC = () => {
         {mode === 'learning' && <LearningCenter language={language} />}
         {mode === 'compatibility' && <CompatibilityTab language={language} />}
         {mode === 'story-hub' && <StoryHub language={language} />}
+        {mode === 'cosmic-art' && <CosmicArt language={language} user={user} onUseKarma={() => true} onOpenStore={() => {}} />}
+        {mode === 'games' && <AstroGames language={language} />}
         
         {mode !== 'hub' && !loading && (
-          <button onClick={() => setMode('hub')} className="mt-12 mx-auto flex items-center justify-center gap-2 text-[10px] font-bold text-slate-500 hover:text-amber-400 uppercase tracking-[0.4em] bg-slate-900/50 px-10 py-3 rounded-full border border-slate-800 transition-all shadow-lg">
+          <button onClick={() => {setMode('hub'); setError(null);}} className="mt-12 mx-auto flex items-center justify-center gap-2 text-[10px] font-bold text-slate-500 hover:text-amber-400 uppercase tracking-[0.4em] bg-slate-900/50 px-10 py-3 rounded-full border border-slate-800 transition-all shadow-lg">
             {t.return}
           </button>
         )}
@@ -227,36 +281,19 @@ const App: React.FC = () => {
                     <span className="text-xl font-serif font-bold text-amber-100 tracking-widest uppercase">CosmicSutra</span>
                 </div>
                 <p className="text-slate-400 text-sm max-w-sm italic mb-4">{t.footer}</p>
+                <div className="flex flex-wrap gap-4 mb-4 justify-center md:justify-start">
+                    <a href="https://appmakers123.github.io/" target="_blank" rel="noopener noreferrer" className="text-amber-400 hover:text-amber-300 font-bold text-xs uppercase tracking-widest border-b border-amber-500/30 pb-1">Discover More Creators</a>
+                </div>
                 <p className="text-slate-500 text-[10px] uppercase tracking-widest">© 2025 CosmicSutra Academy Team</p>
             </div>
-
             <div className="flex flex-col items-center md:items-end gap-6">
-                <p className="text-xs font-serif font-bold text-amber-500 uppercase tracking-[0.3em]">{t.followCreator}</p>
                 <div className="flex gap-6">
-                    <a href="https://www.linkedin.com/in/nikeshmaurya/" target="_blank" rel="noopener noreferrer" className="group flex flex-col items-center gap-2">
-                        <div className="w-12 h-12 bg-slate-800 border border-slate-700 rounded-2xl flex items-center justify-center group-hover:border-blue-500 transition-all shadow-xl group-hover:shadow-blue-500/10">
-                            <svg className="w-6 h-6 text-slate-400 group-hover:text-blue-500" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" />
-                            </svg>
-                        </div>
-                        <span className="text-[8px] uppercase font-bold text-slate-500 group-hover:text-blue-400 tracking-widest">LinkedIn</span>
-                    </a>
-                    <a href="https://www.youtube.com/@NikeshMaurya" target="_blank" rel="noopener noreferrer" className="group flex flex-col items-center gap-2">
-                        <div className="w-12 h-12 bg-slate-800 border border-slate-700 rounded-2xl flex items-center justify-center group-hover:border-red-500 transition-all shadow-xl group-hover:shadow-red-500/10">
-                            <svg className="w-6 h-6 text-slate-400 group-hover:text-red-500" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 4-8 4z" />
-                            </svg>
-                        </div>
-                        <span className="text-[8px] uppercase font-bold text-slate-500 group-hover:text-red-400 tracking-widest">YouTube</span>
-                    </a>
-                    <a href="https://www.instagram.com/palm_reading/?hl=en" target="_blank" rel="noopener noreferrer" className="group flex flex-col items-center gap-2">
-                        <div className="w-12 h-12 bg-slate-800 border border-slate-700 rounded-2xl flex items-center justify-center group-hover:border-pink-500 transition-all shadow-xl group-hover:shadow-pink-500/10">
-                            <svg className="w-6 h-6 text-slate-400 group-hover:text-pink-500" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
-                            </svg>
-                        </div>
-                        <span className="text-[8px] uppercase font-bold text-slate-500 group-hover:text-pink-400 tracking-widest">{t.instagram}</span>
-                    </a>
+                    <a href="https://www.linkedin.com/in/nikeshmaurya/" target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-blue-400 transition-colors">LinkedIn</a>
+                    <a href="https://www.youtube.com/@NikeshMaurya" target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-red-500 transition-colors">YouTube</a>
+                    <a href="https://www.instagram.com/palm_reading/?hl=en" target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-pink-400 transition-colors">Instagram</a>
+                </div>
+                <div className="bg-slate-950/50 p-4 rounded-2xl border border-slate-800 text-[10px] text-slate-500 font-mono">
+                    Visit: <a href="https://appmakers123.github.io/" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">appmakers123.github.io</a>
                 </div>
             </div>
         </div>
